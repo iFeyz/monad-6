@@ -1,0 +1,215 @@
+#root {
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Styles pour le Collaborative Counter */
+.collaborative-counter {
+  padding: 20px;
+  max-width: 500px;
+  margin: 20px auto;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.collaborative-counter h1 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 2em;
+}
+
+.connection-status {
+  margin-bottom: 20px;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.connected {
+  color: #27ae60;
+  background-color: #d5f4e6;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid #27ae60;
+}
+
+.disconnected {
+  color: #e74c3c;
+  background-color: #fdf2f2;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid #e74c3c;
+}
+
+.connect-btn, .disconnect-btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.connect-btn {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
+  color: white;
+}
+
+.connect-btn:hover {
+  background: linear-gradient(45deg, #45a049, #4CAF50);
+  transform: translateY(-2px);
+}
+
+.disconnect-btn {
+  background: linear-gradient(45deg, #f44336, #da190b);
+  color: white;
+  margin-top: 20px;
+}
+
+.disconnect-btn:hover {
+  background: linear-gradient(45deg, #da190b, #f44336);
+  transform: translateY(-2px);
+}
+
+.counter-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.count-display {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.count-display h2 {
+  font-size: 3em;
+  color: #2c3e50;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.last-action {
+  font-style: italic;
+  color: #7f8c8d;
+  margin-top: 10px;
+  font-size: 0.9em;
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.buttons button {
+  flex: 1;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.increment-btn {
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  color: white;
+}
+
+.increment-btn:hover {
+  background: linear-gradient(45deg, #2980b9, #3498db);
+  transform: translateY(-2px);
+}
+
+.decrement-btn {
+  background: linear-gradient(45deg, #f39c12, #e67e22);
+  color: white;
+}
+
+.decrement-btn:hover {
+  background: linear-gradient(45deg, #e67e22, #f39c12);
+  transform: translateY(-2px);
+}
+
+.reset-btn {
+  background: linear-gradient(45deg, #9b59b6, #8e44ad);
+  color: white;
+}
+
+.reset-btn:hover {
+  background: linear-gradient(45deg, #8e44ad, #9b59b6);
+  transform: translateY(-2px);
+}
+
+.players-list {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.players-list h3 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.players-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.players-list li {
+  padding: 8px 12px;
+  background: linear-gradient(45deg, #e3f2fd, #bbdefb);
+  margin: 5px 0;
+  border-radius: 6px;
+  color: #1976d2;
+  font-weight: 500;
+  border-left: 4px solid #2196f3;
+}
+
+.error, .loading {
+  text-align: center;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.error {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 2px solid #f44336;
+}
+
+.loading {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 2px solid #2196f3;
+}
+
+@media (max-width: 600px) {
+  .collaborative-counter {
+    margin: 10px;
+    padding: 15px;
+  }
+  
+  .buttons {
+    flex-direction: column;
+  }
+  
+  .count-display h2 {
+    font-size: 2em;
+  }
+}
