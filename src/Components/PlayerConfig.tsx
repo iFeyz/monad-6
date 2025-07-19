@@ -2,6 +2,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useConnectedUsers, useNicknames } from "react-together"
+import { Input } from "./ui/input"
+import { Button } from "./ui/button"
 
 const formSchema = z.object({
     username: z.string().min(1, {
@@ -29,9 +31,10 @@ export function PlayerConfig() {
 
     return (
         <div>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                <input {...form.register("username")} />
-                <button type="submit">Submit</button>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex gap-2">
+                <Input {...form.register("username")} />
+                <Button type="submit">Submit</Button>
+
             </form>
         </div>
     )

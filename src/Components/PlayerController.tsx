@@ -1,90 +1,148 @@
-import { useEffect, useRef } from 'react'
-import { useStateTogether } from 'react-together'
-import { useFrame, useThree } from '@react-three/fiber'
-import { Vector3 } from 'three'
+import { RigidBody } from "@react-three/rapier"
+import { Player } from "./Player"
+import { useRef } from "react"
+import { MathUtils, Vector3 } from "three"
+import { useFrame } from "@react-three/fiber"
+import { usePlayer } from "@/Hooks/usePlayer"
+import { useControls } from "leva"
+import { useKeyboardControls } from "@react-three/drei"
+import { usePlayerStore } from '../Stores/playerStore'
+import { useStateTogether } from "react-together"
 
-interface PlayerControllerProps {
-  userId: string
-  nickname: string
-}
 
-export function PlayerController({ userId, nickname }: PlayerControllerProps) {
-  const [playerPosition, setPlayerPosition] = useStateTogether(`player_${userId}`, [0, 0, 0])
-  const keysPressed = useRef<Set<string>>(new Set())
-  const { camera } = useThree()
+export const PlayerController = ({userId, nickname}: {userId: string, nickname: string}) => {
+    const [playerPosition, setPlayerPosition] = useStateTogether(`player_${userId}`, [0, 0, 0])
+    const [playerRotation, setPlayerRotation] = useStateTogether(`player_rotation_${userId}`, 0)
+    const { WALK_SPEED, ROTATION_SPEED} = useControls("Character Control", {
+        WALK_SPEED: {
+            value: 5,
+            min: 0,
+            max: 10,
+            step: 0.1,
+        },
+        ROTATION_SPEED: {
+            value: 0.02,
+            min: 0,
+            max: 1,
+            step: 0.01,
+        }
+    })
+    const rb = useRef<any>(null);
+    const container  = useRef<any>(null);
+    const rotationTarget = useRef(0);
+    const cameraTarget = useRef<any>(null);
+    const cameraPosition = useRef<any>(null);
+    const character = useRef<any>(null);
+    const cameraWorldPosition = useRef(new Vector3());
+    const cameraLookAtWorldPosition = useRef(new Vector3());
+    const cameraLookAt = useRef(new Vector3());
+    const playerRotationTarget = useRef(0)
+    const isPlayerController = usePlayerStore(state => state.isPlayerController)
+
+
+    const [, get] = useKeyboardControls();
+
+    const normalizeAngle = (angle: number) => {
+        while (angle > Math.PI) {
+            angle -= Math.PI * 2;
+        }
+        while (angle < -Math.PI) {
+            angle += Math.PI * 2;
+        }
+        return angle;
+    }
+
+    const lerpAngle = (a: number, b: number, t: number) => {
+        a = normalizeAngle(a);
+        b = normalizeAngle(b);
+        if (Math.abs(b - a) > Math.PI) {
+            if (b > a) {
+                a += Math.PI * 2;
+            } else {
+                b += Math.PI * 2;
+            }
+        }
+        return normalizeAngle(a + (b - a) * t);
+    }
+    
+    useFrame(({camera})=>{
   
-  // Gestion des touches
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      keysPressed.current.add(event.code)
-    }
-    
-    const handleKeyUp = (event: KeyboardEvent) => {
-      keysPressed.current.delete(event.code)
-    }
-    
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
-    }
-  }, [])
+        if ( !isPlayerController ) {
+            return;
+        }
+     
 
-  // Mouvement et caméra 3e personne
-  useFrame((state, delta) => {
-    const speed = 5
-    const newPosition = [...playerPosition] as [number, number, number]
-    let moved = false
+        if (rb.current) {
+            const vel = new Vector3(0, 0, 0);
+            const movement = {
+                x : 0,
+                z : 0,
+            };
 
-    // Mouvement basé sur les touches
-    if (keysPressed.current.has('KeyW') || keysPressed.current.has('ArrowUp')) {
-      newPosition[2] -= speed * delta
-      moved = true
-    }
-    if (keysPressed.current.has('KeyS') || keysPressed.current.has('ArrowDown')) {
-      newPosition[2] += speed * delta
-      moved = true
-    }
-    if (keysPressed.current.has('KeyA') || keysPressed.current.has('ArrowLeft')) {
-      newPosition[0] -= speed * delta
-      moved = true
-    }
-    if (keysPressed.current.has('KeyD') || keysPressed.current.has('ArrowRight')) {
-      newPosition[0] += speed * delta
-      moved = true
-    }
-    if (keysPressed.current.has('Space')) {
-      newPosition[1] += speed * delta
-      moved = true
-    }
-    if (keysPressed.current.has('ShiftLeft')) {
-      newPosition[1] -= speed * delta
-      moved = true
-    }
+            if (get().forward) {
+                movement.z = 1;
+            }
+            if (get().backward) {
+                movement.z = -1;
+            }
+            
+            let speed = WALK_SPEED;
 
-    // Limites de mouvement
-    newPosition[0] = Math.max(-10, Math.min(10, newPosition[0]))
-    newPosition[1] = Math.max(0, Math.min(10, newPosition[1]))
-    newPosition[2] = Math.max(-10, Math.min(10, newPosition[2]))
+            if (get().left) {
+                movement.x = 1;
+            }
+            if (get().right) {
+                movement.x = -1;
+            }
 
-    if (moved) {
-      setPlayerPosition(newPosition)
-    }
+            if (movement.x !== 0) {
+                rotationTarget.current += movement.x * ROTATION_SPEED;
+            }
 
-    // Caméra 3e personne
-    const cameraDistance = 8
-    const cameraHeight = 3
-    const targetPosition = new Vector3(
-      newPosition[0] + cameraDistance * Math.sin(state.clock.elapsedTime * 0.1),
-      newPosition[1] + cameraHeight,
-      newPosition[2] + cameraDistance * Math.cos(state.clock.elapsedTime * 0.1)
+            if (movement.x !== 0 || movement.z !== 0) {
+                playerRotationTarget.current = Math.atan2(movement.x, movement.z);
+                vel.x = Math.sin(rotationTarget.current + playerRotationTarget.current) * speed;
+                vel.z = Math.cos(rotationTarget.current + playerRotationTarget.current) * speed;
+            }
+            character.current.rotation.y = lerpAngle(character.current.rotation.y, playerRotationTarget.current, 0.1);
+          
+            rb.current.setLinvel(vel, true);
+            
+            
+        }
+
+        container.current.rotation.y = MathUtils.lerp(container.current.rotation.y, rotationTarget.current, 0.1);
+        cameraPosition.current.getWorldPosition(cameraWorldPosition.current);
+        camera.position.lerp(cameraWorldPosition.current, 0.1);
+
+        if ( cameraTarget.current ) {
+            cameraTarget.current.getWorldPosition(cameraLookAtWorldPosition.current);
+            cameraLookAt.current.lerp(cameraLookAtWorldPosition.current, 0.1);
+            camera.lookAt(cameraLookAt.current);
+        }
+
+        // set the player position
+        const playerWorldPosition = rb.current.translation();
+        if (playerWorldPosition.x != playerPosition[0] || playerWorldPosition.y != playerPosition[1] || playerWorldPosition.z != playerPosition[2]) {
+            console.log(playerWorldPosition);
+            console.log(playerPosition);
+            console.log(playerWorldPosition.x != playerPosition[0]);
+            console.log(playerWorldPosition.y != playerPosition[1]);
+            console.log(playerWorldPosition.z != playerPosition[2]);
+            setPlayerPosition([playerWorldPosition.x, playerWorldPosition.y, playerWorldPosition.z]);
+            setPlayerRotation(character.current.rotation.y);
+        }
+    })
+
+    return (
+        <RigidBody colliders={false} lockRotations ref={rb}>
+            <group ref={container}>
+                <group ref={cameraTarget} position-z={1}/>
+                <group ref={cameraPosition} position-y={4} position-z={-4}/>
+                <group ref={character}>
+                <Player position={[0, 0, 0]} rotation={character?.current?.rotation.y} nickname={nickname} isCurrentUser={true} color="red"/>
+                </group>
+            </group>
+        </RigidBody>
     )
-    
-   // camera.position.lerp(targetPosition, delta * 2)
-    camera.lookAt(new Vector3(newPosition[0], newPosition[1] + 1, newPosition[2]))
-  })
-
-  return null
-} 
+}
