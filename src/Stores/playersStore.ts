@@ -211,7 +211,7 @@ export const usePlayerSync = () => {
 }
 
 
-// Ajoute dans playersStore.ts
+// Ajoute dans playersStore.ts //
 
 export const usePlayerStateSyncManager = (userId: string) => {
 
