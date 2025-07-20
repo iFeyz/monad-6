@@ -8,28 +8,23 @@ import { RigidBody } from '@react-three/rapier'
 interface PlayerProps {
   position: [number, number, number]
   nickname: string
+  userId: string
   isCurrentUser?: boolean
   color?: string
   rotation: number
 }
 
-export function Player({ position, nickname, rotation, isCurrentUser = false, color = '#ff6b6b' }: PlayerProps) {
+export function Player({ position, nickname, rotation, userId, isCurrentUser = false, color = '#ff6b6b' }: PlayerProps) {
   const playerRef = useRef<THREE.Group>(null)
   const nameRef = useRef<THREE.Group>(null)
-  console.log(rotation);
 
   // Animation de bob pour le joueur
   useFrame((state) => {
-    if (playerRef.current) {
-      // Bob animation uniquement pour les autres joueurs
-      if (!isCurrentUser) {
-        playerRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1
-      }
-  
-      // ✅ Mise à jour de la rotation (yaw uniquement ici)
-      playerRef.current.rotation.y = rotation
+    if (playerRef.current && !isCurrentUser) {
+      playerRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1
     }
-  
+    
+    // Le name tag regarde toujours la caméra
     if (nameRef.current) {
       nameRef.current.lookAt(state.camera.position)
     }
@@ -84,11 +79,11 @@ export function Player({ position, nickname, rotation, isCurrentUser = false, co
           anchorX="center"
           anchorY="middle"
         >
-          {nickname}
+          {userId}
         </Text>
         {/* Fond du name tag */}
         <mesh position={[0, 0, -0.01]}>
-          <planeGeometry args={[nickname.length * 0.2 + 0.4, 0.6]} />
+          <planeGeometry args={[userId.length * 0.2 + 0.4, 0.6]} />
           <meshBasicMaterial color="black" opacity={0.7} transparent />
         </mesh>
       </group>
