@@ -2,7 +2,6 @@ import { useConnectedUsers } from 'react-together'
 
 export default function ConnectedUser() {
     const connectedUsers = useConnectedUsers()
-    console.log(connectedUsers)
     return (
         <div > 
             <h1 className="text-sm font-bold ">Connected User</h1>
