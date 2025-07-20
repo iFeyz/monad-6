@@ -6,7 +6,8 @@ import { useConnectedUsers, useNicknames, useStateTogether } from "react-togethe
 // Player data type (without methods)
 type Player = {
     isSpawned: boolean
-    isDespawned: boolean
+    //REMOVE isDespawned
+    //isDespawned: boolean
     isPlayerController: boolean
     nickname: string
     userId: string
@@ -29,6 +30,8 @@ type PlayerStoreState = {
     setPlayerRotation: (userId: string, rot: THREE.Euler) => void
     setPlayerMeshRef: (userId: string, ref: React.RefObject<THREE.Mesh>) => void
     setPlayerController: (userId: string, isController: boolean) => void
+
+    updatePlayerState: (userId: string, updates: Partial<Pick<Player, 'position' | 'rotation'  | 'isSpawned'>>) => void
     
     // Getters
     getPlayer: (userId: string) => Player | undefined
@@ -101,7 +104,7 @@ export const usePlayerStore = create<PlayerStoreState>((set, get) => ({
                         ...player, 
                         isSpawned: true,
                         position: pos ? pos.clone() : player.position,
-                        isDespawned: false
+
                     }
                     : player
             )
@@ -113,9 +116,10 @@ export const usePlayerStore = create<PlayerStoreState>((set, get) => ({
             
             players: state.players.map((player) =>
                 player.userId === userId 
-                    ? { ...player, isSpawned: true, isDespawned: true }
+                    ? { ...player, isSpawned: false }
                     : player
             )
+
         })),
   
     
@@ -153,6 +157,20 @@ export const usePlayerStore = create<PlayerStoreState>((set, get) => ({
                 isPlayerController: player.userId === userId ? isController : false
             }))
         })),
+
+    updatePlayerState: (userId: string, updates: Partial<Pick<Player, 'position' | 'rotation' | 'isSpawned'>>) =>
+        set((state) => ({
+            players: state.players.map((player) =>
+                player.userId === userId 
+                    ? { 
+                        ...player, 
+                        ...updates,
+                        position: updates.position ? updates.position.clone() : player.position,
+                        rotation: updates.rotation ? updates.rotation.clone() : player.rotation,
+                    }
+                    : player
+            )
+        })),
     
     // Getters
     getPlayer: (userId: string) =>
@@ -181,113 +199,148 @@ export const usePlayerSync = () => {
     
     React.useEffect(() => {
         // Vérifier si les utilisateurs connectés ont vraiment changé
-        const usersChanged = JSON.stringify(connectedUsersRef.current) !== JSON.stringify(connectedUsers)
+        const usersChanged = JSON.stringify(connectedUsersRef.current) !== JSON.stringify(connectedUsers.map(user => user.userId))
         const nicknamesChanged = JSON.stringify(nicknamesRef.current) !== JSON.stringify(nicknames)
         
         if (usersChanged || nicknamesChanged) {
             connectedUsersRef.current = connectedUsers.map(user => user.userId)
-            nicknamesRef.current = nicknames[0] // Fix: il faut accéder au bon format de nicknames
+            nicknamesRef.current = nicknames
             syncWithConnectedUsers(connectedUsersRef.current, nicknamesRef.current)
         }
     }, [connectedUsers, nicknames, syncWithConnectedUsers])
 }
 
-// Hook pour synchroniser les positions des joueurs avec react-together
-export const usePlayerPositionSync = (userId: string) => {
-    const [playerPosition, setPlayerPosition] = useStateTogether(`player_${userId}`, [0, 0, 0])
-    const [playerRotation, setPlayerRotation] = useStateTogether(`player_rotation_${userId}`, 0)
-    
-    const setStorePlayerPosition = usePlayerStore(state => state.setPlayerPosition)
-    const setStorePlayerRotation = usePlayerStore(state => state.setPlayerRotation)
-    const getPlayer = usePlayerStore(state => state.getPlayer)
-    
-    // Synchroniser depuis react-together vers le store Zustand
-    React.useEffect(() => {
-        if (playerPosition && playerPosition.length === 3) {
-            const pos = new THREE.Vector3(playerPosition[0], playerPosition[1], playerPosition[2])
-            setStorePlayerPosition(userId, pos)
-        }
-    }, [playerPosition, userId, setStorePlayerPosition])
-    
-    React.useEffect(() => {
-        if (typeof playerRotation === 'number') {
-            const rot = new THREE.Euler(0, playerRotation, 0)
-            setStorePlayerRotation(userId, rot)
-        }
-    }, [playerRotation, userId, setStorePlayerRotation])
-    
-    // Fonction pour mettre à jour la position depuis le contrôleur
-    const updatePosition = React.useCallback((position: THREE.Vector3, rotation: number) => {
-        const currentPos = playerPosition
-        const currentRot = playerRotation
-        
-        // Éviter les mises à jour inutiles
-        if (
-            !currentPos ||
-            Math.abs(currentPos[0] - position.x) > 0.01 ||
-            Math.abs(currentPos[1] - position.y) > 0.01 ||
-            Math.abs(currentPos[2] - position.z) > 0.01 ||
-            Math.abs(currentRot - rotation) > 0.01
-        ) {
-            setPlayerPosition([position.x, position.y, position.z])
-            setPlayerRotation(rotation)
-        }
-    }, [playerPosition, playerRotation, setPlayerPosition, setPlayerRotation])
-    
-    return {
-        playerPosition,
-        playerRotation,
-        updatePosition
-    }
-}
 
 // Ajoute dans playersStore.ts
 
-export const usePlayerSyncState = (userId: string) => {
-    const [isDespawned, setIsDespawned] = useStateTogether(`player_despawn_${userId}`, false)
-    const { playerPosition, playerRotation, updatePosition } = usePlayerPositionSync(userId)
+export const usePlayerStateSyncManager = (userId: string) => {
 
+    const [reactTogetherPosition, setReactTogetherPosition] = useStateTogether(`player_${userId}`, [0, 0, 0])
+    const [reactTogetherRotation, setReactTogetherRotation] = useStateTogether(`player_rotation_${userId}`, 0)
+    const [reactTogetherSpawned, setReactTogetherSpawned] = useStateTogether(`player_spawned_${userId}`, false)
+
+    const updatePlayerState = usePlayerStore(state => state.updatePlayerState)
     const getPlayer = usePlayerStore(state => state.getPlayer)
-    const despawnPlayer = usePlayerStore(state => state.despawnPlayer)
-    const spawnPlayer = usePlayerStore(state => state.spawnPlayer)
+
+    const lastPositionRef = React.useRef<number[]>([0, 0, 0])
+    const lastRotationRef = React.useRef<number>(0)
+    const lastSpawnedRef = React.useRef<boolean>(false)
+    const isUpdatingFromStore = React.useRef<boolean>(false)
 
     React.useEffect(() => {
-        const player = getPlayer(userId)
-        if (!player) return
-
-        // Sync de react-together vers Zustand
-        if (isDespawned && !player.isDespawned) {
-            despawnPlayer(userId)
-        } else if (!isDespawned && player.isDespawned) {
-            spawnPlayer(userId)
+        if (isUpdatingFromStore.current) return
+        
+        if (reactTogetherPosition && reactTogetherPosition.length === 3) {
+            const pos = new THREE.Vector3(reactTogetherPosition[0], reactTogetherPosition[1], reactTogetherPosition[2])
+            const hasPositionChanged = 
+                Math.abs(lastPositionRef.current[0] - pos.x) > 0.001 ||
+                Math.abs(lastPositionRef.current[1] - pos.y) > 0.001 ||
+                Math.abs(lastPositionRef.current[2] - pos.z) > 0.001
+            
+            if (hasPositionChanged) {
+                lastPositionRef.current = [pos.x, pos.y, pos.z]
+                updatePlayerState(userId, { position: pos })
+            }
         }
-    }, [isDespawned, userId, despawnPlayer, spawnPlayer, getPlayer])
+    }, [reactTogetherPosition, userId, updatePlayerState])
 
-    // Méthode à exposer
-    const updateDespawn = React.useCallback((despawn: boolean) => {
-        setIsDespawned(despawn)
-    }, [setIsDespawned])
+    React.useEffect(() => {
+        if (isUpdatingFromStore.current) return
+        
+        if (typeof reactTogetherRotation === 'number') {
+            const rot = new THREE.Euler(0, reactTogetherRotation, 0)
+            const hasRotationChanged = Math.abs(lastRotationRef.current - reactTogetherRotation) > 0.001
+            
+            if (hasRotationChanged) {
+                lastRotationRef.current = reactTogetherRotation
+                updatePlayerState(userId, { rotation: rot })
+            }
+        }
+    }, [reactTogetherRotation, userId, updatePlayerState])
+
+    React.useEffect(() => {
+        if (isUpdatingFromStore.current) return
+        
+        const hasSpawnedChanged = lastSpawnedRef.current !== reactTogetherSpawned
+        
+        if (hasSpawnedChanged) {
+            lastSpawnedRef.current = reactTogetherSpawned
+            updatePlayerState(userId, { 
+                isSpawned: reactTogetherSpawned,
+            })
+        }
+    }, [reactTogetherSpawned, userId, updatePlayerState])
+
+
+    const updatePosition = React.useCallback((position: THREE.Vector3, rotation: number) => {
+        const newPos = [position.x, position.y, position.z]
+        const hasPositionChanged = 
+            Math.abs(lastPositionRef.current[0] - position.x) > 0.001 ||
+            Math.abs(lastPositionRef.current[1] - position.y) > 0.001 ||
+            Math.abs(lastPositionRef.current[2] - position.z) > 0.001
+        const hasRotationChanged = Math.abs(lastRotationRef.current - rotation) > 0.001
+        
+        if (hasPositionChanged || hasRotationChanged) {
+            isUpdatingFromStore.current = true
+            
+            if (hasPositionChanged) {
+                lastPositionRef.current = newPos
+                setReactTogetherPosition(newPos)
+                updatePlayerState(userId, { position })
+            }
+            
+            if (hasRotationChanged) {
+                lastRotationRef.current = rotation
+                setReactTogetherRotation(rotation)
+                updatePlayerState(userId, { rotation: new THREE.Euler(0, rotation, 0) })
+            }
+            
+            // Reset flag après un délai
+            setTimeout(() => {
+                isUpdatingFromStore.current = false
+            }, 50)
+        }
+    }, [setReactTogetherPosition, setReactTogetherRotation, userId, updatePlayerState])
+
+
+    const updateSpawned = React.useCallback((spawned: boolean) => {
+        if (lastSpawnedRef.current !== spawned) {
+            isUpdatingFromStore.current = true
+            lastSpawnedRef.current = spawned
+            setReactTogetherSpawned(spawned)
+            updatePlayerState(userId, { 
+                isSpawned: spawned,
+            })
+            
+            // Reset flag après un délai
+            setTimeout(() => {
+                isUpdatingFromStore.current = false
+            }, 50)
+        }
+    }, [setReactTogetherSpawned, userId, updatePlayerState])
+    
+    const player = getPlayer(userId)
+
 
     return {
-        playerPosition,
-        playerRotation,
+        // État actuel du joueur depuis le store
+        player,
+        playerPosition: player?.position || new THREE.Vector3(),
+        playerRotation: player?.rotation || new THREE.Euler(),
+     
+        isSpawned: player?.isSpawned || false,
+        
+        // Méthodes de mise à jour (qui synchronisent automatiquement avec react-together)
         updatePosition,
-        isDespawned,
-        updateDespawn,
+        updateSpawned,
+        
+        // États bruts de react-together (pour debug si nécessaire)
+        reactTogetherState: {
+            position: reactTogetherPosition,
+            rotation: reactTogetherRotation,
+            spawned: reactTogetherSpawned
+        }
     }
 }
 
 
-// Hook pour récupérer les positions synchronisées de tous les joueurs
-export const useAllPlayersPositions = () => {
-    const players = usePlayerStore(state => state.players)
-    
-    return players.map(player => ({
-        userId: player.userId,
-        nickname: player.nickname,
-        position: player.position,
-        rotation: player.rotation,
-        isSpawned: player.isSpawned,
-        isController: player.isPlayerController
-    }))
-}

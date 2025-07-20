@@ -5,7 +5,7 @@ import { MathUtils, Vector3 } from "three"
 import { useFrame } from "@react-three/fiber"
 import { useControls } from "leva"
 import { useKeyboardControls } from "@react-three/drei"
-import { usePlayerStore, usePlayerPositionSync, usePlayerSyncState } from '../Stores/playersStore'
+import { usePlayerStore, usePlayerStateSyncManager } from '../Stores/playersStore'
 import { useMyId } from "react-together"
 import React from "react"
 
@@ -13,9 +13,15 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
     const myId = useMyId()
     const isCurrentUser = myId === userId
 
-    const { updatePosition, isDespawned } = usePlayerSyncState(userId)
+    // Utilise le nouveau hook unifié pour la synchronisation
+    const { 
+        player, 
+        playerPosition, 
+        playerRotation,
+        isSpawned,
+        updatePosition,  
+    } = usePlayerStateSyncManager(userId)
 
-    const player = usePlayerStore(state => state.getPlayer(userId))
     const spawnPlayer = usePlayerStore(state => state.spawnPlayer)
     const setPlayerController = usePlayerStore(state => state.setPlayerController)
 
@@ -49,9 +55,9 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
 
     useEffect(() => {
         if (isCurrentUser) {
-            if (player && !player.isSpawned) {
-                spawnPlayer(userId)
-            }
+        //    if (player && !player.isSpawned) {
+        //        spawnPlayer(userId)
+        //    }
             if (player && !player.isPlayerController) {
                 setPlayerController(userId, true)
             }
@@ -124,6 +130,7 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
         const playerWorldPosition = rb.current.translation()
         const currentRotation = character.current.rotation.y
 
+        // Utilise la méthode updatePosition du hook unifié
         updatePosition(
             new Vector3(playerWorldPosition.x, playerWorldPosition.y, playerWorldPosition.z),
             currentRotation
@@ -131,20 +138,19 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
     })
 
     if (!isCurrentUser) {
-        if (isDespawned) return null
+        if (!isSpawned) return null
         return (
             <Player
-                position={player?.position.toArray() || [0, 0, 0]}
+                position={playerPosition.toArray()}
                 userId={userId}
-                rotation={player?.rotation.y || 0}
+                rotation={playerRotation.y}
                 nickname={nickname}
                 isCurrentUser={false}
                 color="red"
             />
         )
     }
-    if (isDespawned) return null
-
+    if (!isSpawned) return null
 
     return (
         <RigidBody colliders={false} lockRotations ref={rb}>

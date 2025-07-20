@@ -1,4 +1,4 @@
-import { usePlayerStore, usePlayerSync } from '@/Stores/playersStore'
+import { usePlayerStore, usePlayerSync } from '../Stores/playersStore'
 import { PlayerController } from './PlayerController'
 import { useEffect } from 'react'
 
@@ -14,7 +14,8 @@ export function PlayersManager() {
             userId: p.userId, 
             nickname: p.nickname, 
             isSpawned: p.isSpawned,
-            position: p.position.toArray()
+            position: p.position.toArray(),
+            rotation: p.rotation.y
         })))
     }, [players])
 
