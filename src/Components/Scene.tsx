@@ -7,6 +7,7 @@ import CameraSwitcher from "./CameraSwitcher"
 import { PlayersManager } from "./PlayersManager"
 import { Physics } from "@react-three/rapier"
 import { PivotControls } from "@react-three/drei"
+import SpaceShipController from "./SpaceShipController"
 
 export const Scene = () => {
     //Load the space ship
@@ -33,9 +34,10 @@ export const Scene = () => {
             <Environment preset="night" />
         </>
 
-        <Physics debug>
+        <Physics >
+            <SpaceShipController/>
             <CameraSwitcher/>
-            <PlayersManager/>
+           {/* <PlayersManager/> */}
         </Physics>
 
     </>
