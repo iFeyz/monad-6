@@ -1,9 +1,10 @@
 import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Text } from '@react-three/drei'
+import { Text, useGLTF } from '@react-three/drei'
 import { Vector3 } from 'three'
 import * as THREE from 'three'
 import { RigidBody } from '@react-three/rapier'
+import playerObject from '/player.glb?url'
 
 interface PlayerProps {
   position: [number, number, number]
@@ -30,45 +31,14 @@ export function Player({ position, nickname, rotation, userId, isCurrentUser = f
     }
   })
 
+  const { scene: scence, nodes , materials } = useGLTF(playerObject)
+
   return (
     //TODO ADD ROTATION SYNC
     <group position={position} rotation={[0, rotation, 0]} ref={playerRef}>
-      {/* Corps du joueur - un simple cube coloré */}
 
-      <mesh position={[0, 0.5, 0]}>
-        <boxGeometry args={[0.6, 1, 0.3]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Tête du joueur */}
-      <mesh position={[0, 1.2, 0]}>
-        <boxGeometry args={[0.4, 0.4, 0.4]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Bras gauche */}
-      <mesh position={[-0.4, 0.3, 0]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Bras droit */}
-      <mesh position={[0.4, 0.3, 0]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Jambe gauche */}
-      <mesh position={[-0.15, -0.4, 0]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Jambe droite */}
-      <mesh position={[0.15, -0.4, 0]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
+      <primitive object={scence.clone()} />
+   
       
       {/* Name tag au-dessus du joueur */}
       <group position={[0, 2, 0]} ref={nameRef}>

@@ -8,6 +8,7 @@ type Player = {
     isSpawned: boolean
     //REMOVE isDespawned
     //isDespawned: boolean
+    isPlayerCamera: boolean
     isPlayerController: boolean
     nickname: string
     userId: string
@@ -30,13 +31,15 @@ type PlayerStoreState = {
     setPlayerRotation: (userId: string, rot: THREE.Euler) => void
     setPlayerMeshRef: (userId: string, ref: React.RefObject<THREE.Mesh>) => void
     setPlayerController: (userId: string, isController: boolean) => void
-
+    setPlayerCamera: (userId: string, isCamera: boolean) => void
+    getSpacecraftSpawnPosition: () => THREE.Vector3
     updatePlayerState: (userId: string, updates: Partial<Pick<Player, 'position' | 'rotation'  | 'isSpawned'>>) => void
     
     // Getters
     getPlayer: (userId: string) => Player | undefined
     getControllerPlayer: () => Player | undefined
     getAllSpawnedPlayers: () => Player[]
+    getPlayerCamera: (userId: string) => boolean
     
     // Utility methods
     clearAllPlayers: () => void
@@ -82,9 +85,10 @@ export const usePlayerStore = create<PlayerStoreState>((set, get) => ({
                     return {
                         isSpawned: false,
                         isPlayerController: false,
+                        isPlayerCamera: false,
                         nickname: nicknames[userId] || '',
                         userId,
-                        position: new THREE.Vector3(),
+                        position: new THREE.Vector3(0, 0, 0),
                         rotation: new THREE.Euler(),
                         meshRef: null
                     }
@@ -96,19 +100,35 @@ export const usePlayerStore = create<PlayerStoreState>((set, get) => ({
     },
     
     // Individual player actions
+    getSpacecraftSpawnPosition: () => {
+        // Position du vaisseau + offset pour spawn dessus
+        const spacecraftPosition = new THREE.Vector3(-17, 0.1, 75)
+        const spawnOffset = new THREE.Vector3(
+            (Math.random() - 0.5) * 10, // Aléatoire sur X
+            2, // Au-dessus du vaisseau
+            (Math.random() - 0.5) * 10  // Aléatoire sur Z
+        )
+        return spacecraftPosition.add(spawnOffset)
+    },
+    
+    // Fonction modifiée pour spawn sur le vaisseau
     spawnPlayer: (userId: string, pos?: THREE.Vector3) =>
-        set((state) => ({
-            players: state.players.map((player) =>
-                player.userId === userId 
-                    ? { 
-                        ...player, 
-                        isSpawned: true,
-                        position: pos ? pos.clone() : player.position,
-
-                    }
-                    : player
-            )
-        })),
+        set((state) => {
+            // Si pas de position fournie, utiliser la position du vaisseau
+            const spawnPosition = pos || get().getSpacecraftSpawnPosition()
+            
+            return {
+                players: state.players.map((player) =>
+                    player.userId === userId 
+                        ? { 
+                            ...player, 
+                            isSpawned: true,
+                            position: spawnPosition.clone(),
+                        }
+                        : player
+                )
+            }
+        }),
     
     despawnPlayer: (userId: string) =>
        
@@ -171,6 +191,13 @@ export const usePlayerStore = create<PlayerStoreState>((set, get) => ({
                     : player
             )
         })),
+
+    setPlayerCamera: (userId: string, isCamera: boolean) =>
+        set((state) => ({
+            players: state.players.map((player) =>
+                player.userId === userId ? { ...player, isPlayerCamera: isCamera } : player
+            )
+        })),
     
     // Getters
     getPlayer: (userId: string) =>
@@ -181,6 +208,9 @@ export const usePlayerStore = create<PlayerStoreState>((set, get) => ({
     
     getAllSpawnedPlayers: () =>
         get().players.filter((player) => player.isSpawned),
+    
+    getPlayerCamera: (userId: string) =>
+        get().players.find((player) => player.userId === userId && player.isPlayerCamera) !== undefined,
     
     // Utility methods
     clearAllPlayers: () =>
@@ -270,6 +300,7 @@ export const usePlayerStateSyncManager = (userId: string) => {
             })
         }
     }, [reactTogetherSpawned, userId, updatePlayerState])
+    
 
 
     const updatePosition = React.useCallback((position: THREE.Vector3, rotation: number) => {
