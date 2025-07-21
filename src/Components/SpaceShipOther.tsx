@@ -6,7 +6,6 @@ import manta from "/manta.glb?url"; // Assuming it uses the same model
 import { useShipStore } from "../Stores/shipStore";
 import { group } from "console";
 import { Text,} from "@react-three/drei";
-import { Fog } from "three";
 
 type ShipOtherProps = {
     shipId: string;

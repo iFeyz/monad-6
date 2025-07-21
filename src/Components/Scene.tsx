@@ -24,10 +24,11 @@ export const Scene = () => {
     const spaceRigibBody = useRef<any>(null)
     
     useFrame((state, delta) => {
-        if (spaceRigibBody.current) {
-            const rotationSpeed = 0.01
-            spaceRigibBody.current.setAngvel({ x: 0, y: rotationSpeed, z: 0 }, true)
-        }
+        //ROTATION
+      //  if (spaceRigibBody.current) {
+            //const rotationSpeed = 0.01
+            //spaceRigibBody.current.setAngvel({ x: 0, y: rotationSpeed, z: 0 }, true)
+        //}
     })
 
     const space = useGLTF(spaceCraft)
@@ -41,7 +42,7 @@ export const Scene = () => {
                 <Environment preset="night" />
             </>
 
-            <Physics gravity={[0, -9.81, 0]} debug={true}>
+            <Physics gravity={[0, 0, 0]} debug={true}>
                 <RigidBody 
                     type="dynamic" 
                     colliders="trimesh" 

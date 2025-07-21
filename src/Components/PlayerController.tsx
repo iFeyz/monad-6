@@ -193,7 +193,7 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
             return (
                 <group ref={container}>
                     <group ref={character}>
-                    <RigidBody  lockRotations ref={rb} gravityScale={10}>
+                    <RigidBody  lockRotations ref={rb} gravityScale={10} type="fixed">
 
                     <mesh>
                         <Player

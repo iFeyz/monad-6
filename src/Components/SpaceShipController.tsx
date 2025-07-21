@@ -106,6 +106,9 @@ export default function ShipControlled({ shipId }: ShipControlledProps) {
     useFrame(({ clock }) => {
         if (!rb.current) return
 
+    
+
+
         if (shaderRef.current) {
             shaderRef.current.uniforms.time.value = clock.getElapsedTime()
         }
@@ -115,6 +118,8 @@ export default function ShipControlled({ shipId }: ShipControlledProps) {
 
         const shipPos = rb.current.translation()
         const shipPosition = new Vector3(shipPos.x, shipPos.y, shipPos.z)
+
+        
 
         // Rotation
         const target = targetDirection.current.clone()

@@ -25,3 +25,8 @@ add better interpolation on updating
 add not controlled space ship interaction
 add better flame shader
 
+add wallet connection
+add 
+
+BUG -> press x leave space ship error sync
+
