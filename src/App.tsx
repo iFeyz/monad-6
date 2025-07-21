@@ -15,6 +15,8 @@ import { useThree } from "@react-three/fiber";
 import { SpaceShip } from "./Components/SpaceShip";
 import { CubeTextureLoader } from "three";
 import { Scene } from "./Components/Scene";
+import * as THREE from "three";
+import { useEffect } from "react";
 
 const keyboardMap = [
   { name : "forward", keys: ["ArrowUp", "KeyZ"]},
@@ -25,6 +27,18 @@ const keyboardMap = [
 
 function App() {
 
+  useEffect(() => {
+    const handleClick = () => {
+      const canvas = document.querySelector('canvas')
+      if (canvas) canvas.requestPointerLock()
+    }
+  
+    window.addEventListener("click", handleClick)
+    return () => window.removeEventListener("click", handleClick)
+  }, [])
+  
+ const scene = new THREE.Scene();
+ scene.fog = new THREE.Fog( 0x000000, 0.0025 );
   return (
     <>
     <KeyboardControls map={keyboardMap}>
@@ -33,7 +47,7 @@ function App() {
       <ConnectedUser />
       <PlayerConfig />
       </div>
-      <Canvas camera={{ position: [0, 5, 5], fov: 60 }}>
+      <Canvas>
         <Skybox />
         <Scene />
       </Canvas>
@@ -51,12 +65,10 @@ function Skybox() {
   const loader = new CubeTextureLoader();
   const texture = loader.load([
     
-    "/front.png",
-    "/back.png",
-    "/top.png",
-    "/bottom.png",
-    "/left.png",
-    "/right.png",
+  'px.png', 'nx.png',
+  'py.png', 'ny.png',
+  'pz.png', 'nz.png'
+
   ])
 
   scene.background = texture;

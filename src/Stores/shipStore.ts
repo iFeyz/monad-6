@@ -1,13 +1,14 @@
-import { create} from "zustand"
+import { create } from "zustand"
 import * as THREE from "three"
 import React, { useEffect } from "react"
 import { useStateTogether } from "react-together"
+import { usePlayerStore } from "./playersStore"
 
 type SyncShip = {
     id: string;
     position: [number, number, number]; // Serializable format
     rotation: [number, number, number]; // Serializable format (Euler angles)
-    isControlled: string | null; // NEW: ID of controlling user, or null
+    isControlled: string | null; // Correct: ID of controlling user, or null
 }
 
 // Type for a ship object within the Zustand store (using THREE.Vector3/Euler)
@@ -15,7 +16,7 @@ type LocalShip = {
     id: string;
     position: THREE.Vector3;
     rotation: THREE.Euler;
-    isControlled: string | null; // NEW: ID of controlling user, or null
+    isControlled: string | null; // Correct: ID of controlling user, or null
 }
 
 type ShipStoreState = {
@@ -27,10 +28,11 @@ type ShipStoreState = {
     removeShip: (id: string) => void;
     updateShipPosition: (id: string, position: THREE.Vector3) => void;
     updateShipRotation: (id: string, rotation: THREE.Euler) => void;
-    // NEW: Update who controls a ship
     setShipControlledBy: (shipId: string, userId: string | null) => void;
     getShip: (id: string) => LocalShip | undefined;
-    getControlledShip: (userId: string) => LocalShip | undefined; // NEW: Get ship controlled by a specific user
+    getControlledShip: (userId: string) => LocalShip | undefined;
+    // Nouvelle méthode pour nettoyer les vaisseaux des joueurs déconnectés
+    cleanupDisconnectedPlayerShips: (connectedPlayerIds: string[]) => void;
 }
 
 export const useShipStore = create<ShipStoreState>((set, get) => ({
@@ -45,19 +47,19 @@ export const useShipStore = create<ShipStoreState>((set, get) => ({
                 const existingShip = currentShipsMap.get(syncedShip.id);
                 const newPosition = new THREE.Vector3(...syncedShip.position);
                 const newRotation = new THREE.Euler(...syncedShip.rotation);
-                const newIsControlled = syncedShip.isControlled; // NEW
+                const newIsControlled = syncedShip.isControlled;
 
                 if (existingShip) {
                     const posChanged = !existingShip.position.equals(newPosition);
                     const rotChanged = !existingShip.rotation.equals(newRotation);
-                    const controlledChanged = existingShip.isControlled !== newIsControlled; // NEW
+                    const controlledChanged = existingShip.isControlled !== newIsControlled;
 
-                    if (posChanged || rotChanged || controlledChanged) { // NEW
+                    if (posChanged || rotChanged || controlledChanged) {
                         newShips.push({
                             ...existingShip,
                             position: posChanged ? newPosition : existingShip.position,
                             rotation: rotChanged ? newRotation : existingShip.rotation,
-                            isControlled: controlledChanged ? newIsControlled : existingShip.isControlled, // NEW
+                            isControlled: controlledChanged ? newIsControlled : existingShip.isControlled,
                         });
                     } else {
                         newShips.push(existingShip);
@@ -67,7 +69,7 @@ export const useShipStore = create<ShipStoreState>((set, get) => ({
                         id: syncedShip.id,
                         position: newPosition,
                         rotation: newRotation,
-                        isControlled: newIsControlled, // NEW
+                        isControlled: newIsControlled,
                     });
                 }
             });
@@ -81,7 +83,7 @@ export const useShipStore = create<ShipStoreState>((set, get) => ({
                     return foundSynced &&
                            foundSynced.position.equals(localShip.position) &&
                            foundSynced.rotation.equals(localShip.rotation) &&
-                           foundSynced.isControlled === localShip.isControlled; // NEW
+                           foundSynced.isControlled === localShip.isControlled;
                 });
 
             if (hasStructuralChanges) {
@@ -116,7 +118,7 @@ export const useShipStore = create<ShipStoreState>((set, get) => ({
             ships: state.ships.map((ship) => ship.id === id ? { ...ship, rotation } : ship)
         }));
     },
-    // NEW: setShipControlledBy action
+
     setShipControlledBy: (shipId: string, userId: string | null) => {
         set((state) => ({
             ships: state.ships.map((ship) =>
@@ -125,24 +127,55 @@ export const useShipStore = create<ShipStoreState>((set, get) => ({
         }));
     },
 
+    // Nouvelle méthode pour nettoyer les vaisseaux des joueurs déconnectés
+    cleanupDisconnectedPlayerShips: (connectedPlayerIds: string[]) => {
+        set((state) => {
+            const shipsToRemove = state.ships.filter(ship => 
+                ship.isControlled && !connectedPlayerIds.includes(ship.isControlled)
+            );
+
+            if (shipsToRemove.length > 0) {
+                console.log(`Removing ${shipsToRemove.length} ships from disconnected players:`, 
+                    shipsToRemove.map(s => ({ id: s.id, controlledBy: s.isControlled })));
+                
+                const remainingShips = state.ships.filter(ship => 
+                    !ship.isControlled || connectedPlayerIds.includes(ship.isControlled)
+                );
+                
+                return { ships: remainingShips };
+            }
+            
+            return state;
+        });
+    },
+
     getShip: (id: string) => get().ships.find(ship => ship.id === id),
-    // NEW: getControlledShip getter
     getControlledShip: (userId: string) => get().ships.find(ship => ship.isControlled === userId)
 }));
 
 
 export const useShipSync = () => {
+
+    const players = usePlayerStore((state) => state.players);
     const localShips = useShipStore((state) => state.ships);
+    const getShip = useShipStore((state) => state.getShip);
     const syncShips = useShipStore((state) => state.syncShips);
     const addShip = useShipStore((state) => state.addShip);
     const removeShip = useShipStore((state) => state.removeShip);
     const updateShipPosition = useShipStore((state) => state.updateShipPosition);
     const updateShipRotation = useShipStore((state) => state.updateShipRotation);
-    const setShipControlledBy = useShipStore((state) => state.setShipControlledBy); // NEW
+    const setShipControlledBy = useShipStore((state) => state.setShipControlledBy);
+    const cleanupDisconnectedPlayerShips = useShipStore((state) => state.cleanupDisconnectedPlayerShips);
 
     const [reactTogetherShips, setReactTogetherShips] = useStateTogether<SyncShip[]>(`ships`, []);
 
     const isUpdatingFromReactTogetherRef = React.useRef(false);
+
+    // Effet pour nettoyer les vaisseaux quand des joueurs se déconnectent
+    React.useEffect(() => {
+        const connectedPlayerIds = players.map(player => player.userId);
+        cleanupDisconnectedPlayerShips(connectedPlayerIds);
+    }, [players, cleanupDisconnectedPlayerShips]);
 
     React.useEffect(() => {
         if (isUpdatingFromReactTogetherRef.current) {
@@ -154,7 +187,7 @@ export const useShipSync = () => {
             id: ship.id,
             position: [ship.position.x, ship.position.y, ship.position.z],
             rotation: [ship.rotation.x, ship.rotation.y, ship.rotation.z],
-            isControlled: ship.isControlled, // NEW
+            isControlled: ship.isControlled,
         }));
 
         const currentReactTogetherShipsString = JSON.stringify(reactTogetherShips);
@@ -172,7 +205,7 @@ export const useShipSync = () => {
 
 
     const createShip = React.useCallback((id: string, pos: THREE.Vector3, rot: THREE.Euler) => {
-        addShip({ id, position: pos, rotation: rot, isControlled: null }); // NEW: default to null
+        addShip({ id, position: pos, rotation: rot, isControlled: null });
     }, [addShip]);
 
     const deleteShip = React.useCallback((id: string) => {
@@ -187,13 +220,32 @@ export const useShipSync = () => {
         updateShipRotation(id, rotation);
     }, [updateShipRotation]);
 
-    const controlShip = React.useCallback((shipId: string, userId: string) => { // NEW: Function to take control
+    const controlShip = React.useCallback((shipId: string, userId: string) => {
         setShipControlledBy(shipId, userId);
     }, [setShipControlledBy]);
 
-    const leaveShip = React.useCallback((shipId: string) => { // NEW: Function to leave control
+    const leaveShip = React.useCallback((shipId: string) => {
         setShipControlledBy(shipId, null);
-    }, [setShipControlledBy]);
+        
+        // Forcer la mise à jour immédiate de react-together
+        const updatedShips = localShips.map(ship => 
+            ship.id === shipId 
+                ? { ...ship, isControlled: null }
+                : ship
+        );
+        
+        const serializedShips: SyncShip[] = updatedShips.map(ship => ({
+            id: ship.id,
+            position: [ship.position.x, ship.position.y, ship.position.z],
+            rotation: [ship.rotation.x, ship.rotation.y, ship.rotation.z],
+            isControlled: ship.isControlled,
+        }));
+        
+        setReactTogetherShips(serializedShips);
+        
+        const ship = getShip(shipId);
+        console.log("leaveShip", ship);
+    }, [setShipControlledBy, localShips, setReactTogetherShips, getShip]);
 
 
     return {
@@ -202,8 +254,8 @@ export const useShipSync = () => {
         removeShip: deleteShip,
         updateShipPosition: updateShipPos,
         updateShipRotation: updateShipRot,
-        controlShip, // NEW
-        leaveShip, // NEW
+        controlShip,
+        leaveShip,
         reactTogetherShips,
     };
 };

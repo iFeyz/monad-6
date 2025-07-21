@@ -1,13 +1,14 @@
-import { RigidBody } from "@react-three/rapier"
+import { RigidBody , CapsuleCollider } from "@react-three/rapier"
 import { Player } from "./Player"
 import { useRef, useEffect, useCallback } from "react"
 import { MathUtils, Vector3 } from "three"
-import { useFrame } from "@react-three/fiber"
+import { useFrame, useThree } from "@react-three/fiber"
 import { useControls } from "leva"
 import { useKeyboardControls } from "@react-three/drei"
 import { usePlayerStore, usePlayerStateSyncManager } from '../Stores/playersStore'
 import { useMyId } from "react-together"
 import React from "react"
+import * as THREE from "three"
 
 export const PlayerController = ({ userId, nickname }: { userId: string, nickname: string }) => {
     const myId = useMyId()
@@ -24,6 +25,8 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
 
     const spawnPlayer = usePlayerStore(state => state.spawnPlayer)
     const setPlayerController = usePlayerStore(state => state.setPlayerController)
+    const getPlayerCamera = usePlayerStore(state => state.getPlayerCamera)
+    const setPlayerCamera = usePlayerStore(state => state.setPlayerCamera)
 
     // Hooks doivent être appelés inconditionnellement
     const { WALK_SPEED, ROTATION_SPEED } = useControls("Character Control", {
@@ -51,21 +54,30 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
     const cameraLookAtWorldPosition = useRef(new Vector3())
     const cameraLookAt = useRef(new Vector3())
     const playerRotationTarget = useRef(0)
+    const isPlayerCamera = getPlayerCamera(userId)
     const [, get] = useKeyboardControls()
+    const { size, camera } = useThree()
+
+    console.log("isPlayerCamera", isPlayerCamera)
 
     useEffect(() => {
+        if (camera instanceof THREE.PerspectiveCamera) {
+            camera.fov = 80;
+            camera.near = 0.1;
+            camera.far = 10000;
+            camera.aspect = size.width / size.height;
+            camera.updateProjectionMatrix();
+            console.log(`Camera FOV: ${camera.fov}, Near: ${camera.near}, Far: ${camera.far}`);
+        }
         if (isCurrentUser) {
         //    if (player && !player.isSpawned) {
         //        spawnPlayer(userId)
         //    }
             if (player && !player.isPlayerController) {
+             //   setPlayerCamera(userId, true)
                 setPlayerController(userId, true)
             }
-        } else {
-            if (player && !player.isSpawned) {
-                spawnPlayer(userId)
-            }
-        }
+        } 
     }, [player, userId, isCurrentUser, spawnPlayer, setPlayerController])
 
     const normalizeAngle = (angle: number) => {
@@ -130,6 +142,9 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
         const playerWorldPosition = rb.current.translation()
         const currentRotation = character.current.rotation.y
 
+        // If player disconnect ans reconnect
+     
+
         // Utilise la méthode updatePosition du hook unifié
         updatePosition(
             new Vector3(playerWorldPosition.x, playerWorldPosition.y, playerWorldPosition.z),
@@ -139,6 +154,7 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
 
     if (!isCurrentUser) {
         if (!isSpawned) return null
+        console.log("PlayerController", userId, nickname, isSpawned)
         return (
             <Player
                 position={playerPosition.toArray()}
@@ -152,22 +168,50 @@ export const PlayerController = ({ userId, nickname }: { userId: string, nicknam
     }
     if (!isSpawned) return null
 
-    return (
-        <RigidBody colliders={false} lockRotations ref={rb}>
-            <group ref={container}>
-                <group ref={cameraTarget} position-z={1} />
-                <group ref={cameraPosition} position-y={4} position-z={-4} />
-                <group ref={character}>
-                    <Player
-                        position={[0, 0, 0]}
-                        userId={userId}
-                        rotation={character?.current?.rotation.y || 0}
-                        nickname={nickname}
-                        isCurrentUser={true}
-                        color="blue"
-                    />
+    if(isPlayerCamera) {
+        return (
+            <RigidBody lockRotations ref={rb}>
+                <group ref={container}>
+                    <group ref={cameraTarget} position-z={1} />
+                    <group ref={cameraPosition} position-y={4} position-z={-4} />
+                    <group ref={character}>
+                        <Player
+                            position={[0, 0, 0]}
+                            userId={userId}
+                            rotation={character?.current?.rotation.y || 0}
+                            nickname={nickname}
+                            isCurrentUser={true}
+                            color="blue"
+                        />
+                    
+                    </group>
                 </group>
-            </group>
-        </RigidBody>
-    )
+            </RigidBody>
+        ) 
+    }
+    else {
+            return (
+                <group ref={container}>
+                    <group ref={character}>
+                    <RigidBody  lockRotations ref={rb} gravityScale={10}>
+
+                    <mesh>
+                        <Player
+                            position={[0, 0, 0]}
+                            userId={userId}
+                            rotation={character?.current?.rotation.y || 0}
+                            nickname={nickname}
+                            isCurrentUser={true}
+                            color="blue"
+                        />
+                        <CapsuleCollider args={[1, 1]} position={[0, 0, 0]} />
+                    </mesh>
+                    </RigidBody>
+                    </group>
+                </group>
+         
+            )
+    }
+    
+
 }
