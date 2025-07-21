@@ -9,9 +9,9 @@ createRoot(document.getElementById('root')!).render(
 
       <ReactTogether
         sessionParams={{
-          apiKey: "2T1aBiJ4pXr1TOdJvRugmxw5IzXM9VNzR88wZjY2Gz",
+          apiKey: "2UyoWWPeshm6dVAzSbiuCIljeH5hPmi0eu6jVVQakZ",
           appId: "com.example.myapp",
-          name: "test-session",
+          name: "test-sessdsdsdsion",
           password: "test-password"
           }}
       >
