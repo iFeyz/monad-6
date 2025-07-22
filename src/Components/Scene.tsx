@@ -1,6 +1,6 @@
 import { useLoader } from "@react-three/fiber"
 import { Environment, useGLTF } from "@react-three/drei"
-import manta from "/manta.glb?url"  
+import manta from "/manta.glb?url"
 import { Group } from "three"
 import * as THREE from "three"
 import CameraSwitcher from "./CameraSwitcher"
@@ -16,29 +16,20 @@ import { useThree } from "@react-three/fiber"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import { useFrame } from "@react-three/fiber"
 import { useRef } from "react"
+import { InteractiveObjects } from "./InteractiveObjects"
+// NOUVEAUX IMPORTS
+import { InteractionManager } from "./InteractionManager"
 
 export const Scene = () => {
     const spaceRigibBody = useRef<any>(null)
     
     useFrame((state, delta) => {
         if (spaceRigibBody.current) {
-            // Solution 1: Forcer la vélocité angulaire à chaque frame
             const rotationSpeed = 0.01
-            spaceRigibBody.current.setAngvel({ x: 0, y: rotationSpeed, z: 0 }, true) // true = wake up the body
-            
-            // Solution 2: Alternative si la solution 1 ne marche pas
-            // spaceRigibBody.current.resetForces(true)
-            // spaceRigibBody.current.resetTorques(true)
-            // spaceRigibBody.current.setAngvel({ x: rotationSpeed, y: 0, z: 0 }, true)
-            
-            // Solution 3: Si les autres solutions ne marchent pas, manipulation directe
-            // const currentQuat = spaceRigibBody.current.rotation()
-            // const deltaRotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), rotationSpeed * delta)
-            // spaceRigibBody.current.setRotation(currentQuat.multiply(deltaRotation), true)
+            spaceRigibBody.current.setAngvel({ x: 0, y: rotationSpeed, z: 0 }, true)
         }
     })
 
-    //Load the space ship
     const space = useGLTF(spaceCraft)
     
     return (
@@ -69,10 +60,11 @@ export const Scene = () => {
                 <ShipManager/>
                 <CameraSwitcher/>
                 
-                {/* Single planet for reference/testing */}
-                <ProceduralPlanet/>
+                {/* NOUVEAU: Système d'interaction */}
+                <InteractionManager />
+                <InteractiveObjects/>
                 
-                {/* Procedural Galaxy with many planets */}
+                <ProceduralPlanet/>
                 <ProceduralGalaxy/>
             </Physics>
         </>
