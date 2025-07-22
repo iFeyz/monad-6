@@ -54,11 +54,11 @@ export default function App() {
           <Scene />
         </Canvas>
       </KeyboardControls>
-      <div className="absolute bottom-5 right-5 px-2 py-1 rounded gap-2 flex text-neutral-50 bg-sky-600">
+      <div className="absolute bottom-5 right-5 px-2 py-1 rounded gap-2 flex text-neutral-50 bg-neutral-800">
         <ChatManager />
-        <WalletManager />
         <SessionManager />
-      </div>
+        <WalletManager />
+      </div>{" "}
     </>
   );
 }
