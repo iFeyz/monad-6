@@ -5,7 +5,7 @@ import { useKeyboardControls } from '@react-three/drei';
 import { Vector3 } from 'three';
 import { useMyId } from 'react-together';
 import { useThree } from '@react-three/fiber';
-import ShipControlled from './SpaceShipController';
+import { ShipController } from './SpaceShipController';
 import ShipOther from './SpaceShipOther';
 import { SpaceshipSpawner } from './SpawnShipSpawner';
 import { SpaceshipInteractions } from './SpaceShipInteraction';
@@ -119,7 +119,7 @@ export default function ShipManager() {
             {ships.map(ship => {
                 if (ship.isControlled === currentUserId) {
                     return (
-                        <ShipControlled
+                        <ShipController
                             key={ship.id}
                             shipId={ship.id}
                             initialPosition={ship.position}

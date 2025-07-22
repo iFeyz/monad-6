@@ -26,7 +26,6 @@ export default function ShipOther({ shipId, position, rotation }: ShipOtherProps
             rb.current.setRotation(quaternion, true);
         }
     }, [position, rotation]); // Depend on position and rotation props
-    console.log("ship", ship);
     if (ship?.isControlled === null) {
         return (
             <RigidBody
