@@ -29,9 +29,7 @@ function InteractionUI({ interaction }: { interaction: ActiveInteract }) {
     return (
         <group position={[position.x, position.y + 2, position.z]}>
             <mesh position={[0, 0, -0.01]}>
-                <planeGeometry args={[3, 1]} />
-                <meshBasicMaterial color="black" transparent opacity={0.8} />
-            </mesh>
+            
             <Text
                 ref={textRef}
                 fontSize={0.25}
@@ -44,6 +42,7 @@ function InteractionUI({ interaction }: { interaction: ActiveInteract }) {
             >
                 {config.interactionText}
             </Text>
+            </mesh>
         </group>
     )
 }

@@ -28,5 +28,5 @@ add better flame shader
 add wallet connection
 add 
 
-BUG -> press x leave space ship error sync
+BUG -> press x leave space ship error sync camera
 

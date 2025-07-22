@@ -6,6 +6,7 @@ import { useMyId } from 'react-together'
 import { Box, Cylinder, Sphere, Text } from '@react-three/drei'
 import type { ActiveInteract } from '../Stores/interactStore'
 import { useGLTF } from '@react-three/drei'
+import { RigidBody } from '@react-three/rapier'
 
 export const SpaceshipSpawner = () => {
     const [spawnedShips, setSpawnedShips] = useState<string[]>([])
@@ -38,7 +39,7 @@ export const SpaceshipSpawner = () => {
             <InteractiveObjectComponent
                 id="spaceship-spawner"
                 type="ship-spawner"
-                position={new Vector3(10, 2, 10)}
+                position={new Vector3(10, 0, 10)}
                 radius={3}
                 onInteract={handleSpawnShip}
                 interactionText={`Spawner un vaisseau (${ships.length} vaisseaux)`}
@@ -48,6 +49,8 @@ export const SpaceshipSpawner = () => {
                 }}
                 showDebugRadius={true}
             >
+                        <RigidBody type="fixed" colliders="trimesh" gravityScale={0} enabledRotations={[true, true, true]} enabledTranslations={[true, true, true]}> 
+
                 <group>
                     {/* Base du spawner */}
                     <Cylinder args={[2, 2, 0.5, 8]}>
@@ -92,7 +95,9 @@ export const SpaceshipSpawner = () => {
                         <meshBasicMaterial color="yellow" />
                     </Sphere>
                 </group>
+                </RigidBody>
             </InteractiveObjectComponent>
+      
         </>
     )
 }

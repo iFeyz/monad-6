@@ -42,7 +42,7 @@ export const Scene = () => {
                 <Environment preset="night" />
             </>
 
-            <Physics gravity={[0, 0, 0]} debug={true}>
+            <Physics gravity={[0, -10, 0]} debug={true}>
                 <RigidBody 
                     type="dynamic" 
                     colliders="trimesh" 
@@ -52,11 +52,24 @@ export const Scene = () => {
                     ref={spaceRigibBody}
                     canSleep={false}
                 >
-                    <group position={[-17, 0.1, 75]} scale={100}>
+                    <group position={[-107, 0.1, 75]} scale={100}>
                         <primitive object={space.scene.clone()} />
                     </group>
                 </RigidBody>
-          
+
+                {/* SPAWN  PLANE SURFACE */}
+                <RigidBody 
+                    type="fixed" 
+                    colliders="trimesh" 
+                    gravityScale={0} 
+                    enabledRotations={[true, true, true]} 
+                    enabledTranslations={[true, true, true]} 
+                >
+                    <mesh position={[0, -2, 0]}>
+                        <boxGeometry args={[50, 2, 50]} />
+                        <meshBasicMaterial color="red" />
+                    </mesh>
+                </RigidBody>
                 <PlayersManager/>
                 <ShipManager/>
                 <CameraSwitcher/>
