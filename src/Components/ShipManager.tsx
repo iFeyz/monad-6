@@ -114,24 +114,7 @@ export default function ShipManager() {
             <SpaceshipSpawner />
             <SpaceshipInteractions />
             
-            {controlledShip && !isExitingShip.current && (
-                <div style={{
-                    position: 'fixed',
-                    bottom: '20px',
-                    right: '20px',
-                    background: 'rgba(0,0,0,0.8)',
-                    color: 'white',
-                    padding: '10px 15px',
-                    borderRadius: '5px',
-                    fontFamily: 'monospace',
-                    fontSize: '14px',
-                    zIndex: 1000,
-                    border: '1px solid #444'
-                }}>
-                    <div>🚀 Contrôle du vaisseau</div>
-                    <div>Appuyez sur X pour sortir (relâchez les autres touches)</div>
-                </div>
-            )}
+          
             
             {ships.map(ship => {
                 if (ship.isControlled === currentUserId) {

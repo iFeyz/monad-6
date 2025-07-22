@@ -9,6 +9,7 @@
     import { useMyId } from "react-together"
     import React from "react"
     import * as THREE from "three"
+import { useShipStore, useShipSync } from "@/Stores/shipStore"
 
     export const PlayerController = ({ userId, nickname }: { userId: string, nickname: string }) => {
         const myId = useMyId()
@@ -27,6 +28,9 @@
         const setPlayerController = usePlayerStore(state => state.setPlayerController)
         const getPlayerCamera = usePlayerStore(state => state.getPlayerCamera)
         const setPlayerCamera = usePlayerStore(state => state.setPlayerCamera)
+
+        const possibleShipControlled = useShipStore(state => state.getControlledShip(userId))
+        const { leaveShip } = useShipSync();
 
         // Hooks doivent être appelés inconditionnellement
         const { WALK_SPEED, ROTATION_SPEED } = useControls("Character Control", {
@@ -61,6 +65,15 @@
         console.log("isPlayerCamera", isPlayerCamera)
 
         useEffect(() => {
+
+        
+            if (possibleShipControlled && player && player.isPlayerController && player.isSpawned) {
+                const shipId = possibleShipControlled.id
+                leaveShip(shipId)
+                setPlayerCamera(userId, true)
+            }
+
+
             if (camera instanceof THREE.PerspectiveCamera) {
                 camera.fov = 80;
                 camera.near = 0.1;
