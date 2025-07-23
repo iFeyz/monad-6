@@ -20,6 +20,7 @@ import { InteractiveObjects } from "./InteractiveObjects"
 import RocketThrust from "./RocketThrust"
 // NOUVEAUX IMPORTS
 import { InteractionManager } from "./InteractionManager"
+import SwordSlash from "./SwordSlash"
 
 export const Scene = () => {
     const spaceRigibBody = useRef<any>(null)
@@ -78,7 +79,9 @@ export const Scene = () => {
                 {/* NOUVEAU: Système d'interaction */}
                 <InteractionManager />
                 <InteractiveObjects/>
-                <RocketThrust/>
+                <group position={[10, 1, 1]} rotation={[0, Math.PI/2, 0]}>
+                    <SwordSlash/>
+                </group>
                 <ProceduralPlanet/>
                 <ProceduralGalaxy/>
             </Physics>
