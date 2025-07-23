@@ -9,6 +9,7 @@ import manta from "/manta.glb?url"
 import { useShipStore } from '@/Stores/shipStore'
 import { RapierRigidBody } from '@react-three/rapier'
 import React from "react"
+import RocketThrust from "./RocketThrust"
 
 type ShipControlledProps = {
     shipId: string;
@@ -52,8 +53,8 @@ export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
         BOOST_MULTIPLIER: { value: 2.5 },
         ROTATION_SPEED: { value: 2 },
         ROLL_SPEED: { value: 1.5 },
-        CAMERA_OFFSET_Z: { value: 20 },
-        CAMERA_OFFSET_Y: { value: 0 }
+        CAMERA_OFFSET_Z: { value: 35 },
+        CAMERA_OFFSET_Y: { value: 5 }
     }), [])
 
     const {
@@ -285,6 +286,7 @@ export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
             <group rotation={[0, Math.PI / 2, 0]}>
                 <primitive object={spaceshipScene.clone()} scale={2} />
             </group>
+        
         </group>
     ), [spaceshipScene])
 
@@ -305,17 +307,18 @@ export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
     // === RENDER (NO EARLY RETURNS NEEDED) ===
     return (
         <RigidBody
-            ref={rb}
-            colliders="hull"
+            ref={rb}    
+            colliders={false}
             scale={5}
             gravityScale={0.1}
             enabledRotations={[true, true, true]}
             enabledTranslations={[true, true, true]}
-            type="dynamic"
+            
         >
             <group ref={cameraRig}>
-                {SpaceshipModel}
-                {FlameEffect}
+                {/*SpaceshipModel*/}
+                <RocketThrust />
+         
             </group>
         </RigidBody>
     )

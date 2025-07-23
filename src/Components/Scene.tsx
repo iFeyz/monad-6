@@ -17,6 +17,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import { useFrame } from "@react-three/fiber"
 import { useRef } from "react"
 import { InteractiveObjects } from "./InteractiveObjects"
+import RocketThrust from "./RocketThrust"
 // NOUVEAUX IMPORTS
 import { InteractionManager } from "./InteractionManager"
 
@@ -77,7 +78,7 @@ export const Scene = () => {
                 {/* NOUVEAU: Système d'interaction */}
                 <InteractionManager />
                 <InteractiveObjects/>
-                
+                <RocketThrust/>
                 <ProceduralPlanet/>
                 <ProceduralGalaxy/>
             </Physics>

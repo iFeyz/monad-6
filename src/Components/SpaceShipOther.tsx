@@ -5,7 +5,7 @@ import * as THREE from 'three'; // Import THREE for types
 import manta from "/manta.glb?url"; // Assuming it uses the same model
 import { useShipStore } from "../Stores/shipStore";
 import { group } from "console";
-import { Text,} from "@react-three/drei";
+import { Text } from "@react-three/drei";
 
 type ShipOtherProps = {
     shipId: string;
@@ -26,6 +26,7 @@ export default function ShipOther({ shipId, position, rotation }: ShipOtherProps
             rb.current.setRotation(quaternion, true);
         }
     }, [position, rotation]); // Depend on position and rotation props
+    
     if (ship?.isControlled === null) {
         return (
             <RigidBody
