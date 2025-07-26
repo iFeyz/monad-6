@@ -12,11 +12,13 @@ export default function CameraSwitcher() {
   const myId = useMyId()
   const isDespawned = usePlayerStore(state => state.getPlayer(myId || "")?.isDespawned)
   const setIsPlayerController = usePlayerStore(state => state.setPlayerController)
+  const setIsPlayerCamera = usePlayerStore(state => state.setPlayerCamera)
   const orbitCameraRef = useRef<THREE.PerspectiveCamera>(null)
   const { set } = useThree()
 
   const cameraOptions = useMemo(() => ({ orbit: false }), [])
   const { orbit } = useControls('Camera', cameraOptions)
+  const isPlayerCamera = usePlayerStore(state => state.getPlayerCamera(myId || ""))
 
   useFrame(() => {
     if (orbit && orbitCameraRef.current) {
@@ -26,6 +28,7 @@ export default function CameraSwitcher() {
 
 useEffect(() => {
   setIsPlayerController(localPlayer?.userId!, !orbit)
+  setIsPlayerCamera(localPlayer?.userId!, !orbit)
 }, [orbit, setIsPlayerController])
   if (!localPlayer) return null
 
@@ -35,6 +38,7 @@ useEffect(() => {
         <>
       
           <OrbitControls 
+            
             target={[0, 0, 0]}
             enablePan={true}
             enableZoom={true}

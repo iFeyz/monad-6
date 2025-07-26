@@ -3,10 +3,10 @@ import { PlayerController } from './PlayerController'
 import { useEffect } from 'react'
 
 export function PlayersManager() {
-    // Synchronise automatiquement avec react-together
+    // Automatically synchronize with react-together
     usePlayerSync()
     
-    // Récupère tous les players du store
+    // Get all players from store
     const players = usePlayerStore(state => state.players)
     
     useEffect(() => {

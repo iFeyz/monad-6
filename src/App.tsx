@@ -17,9 +17,12 @@ import { CubeTextureLoader } from "three";
 import { Scene } from "./Components/Scene";
 import * as THREE from "three";
 import { useEffect } from "react";
+
+
 import ChatManager from "./Components/ChatManager";
 import WalletManager from "./Components/WalletManager";
 import SessionManager from "./Components/SessionManager";
+
 
 const keyboardMap = [
   { name: "forward", keys: ["ArrowUp", "KeyZ"] },
@@ -35,24 +38,31 @@ export default function App() {
       if (canvas) canvas.requestPointerLock();
     };
 
-    window.addEventListener("click", handleClick);
-    return () => window.removeEventListener("click", handleClick);
-  }, []);
 
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x000000, 0.0025);
+  useEffect(() => {
+    const handleClick = () => {
+      const canvas = document.querySelector('canvas')
+      if (canvas) canvas.requestPointerLock()
+    }
+  
+    window.addEventListener("click", handleClick)
+    return () => window.removeEventListener("click", handleClick)
+  }, [])
+  
+
   return (
     <>
-      <KeyboardControls map={keyboardMap}>
-        <div className="absolute top-2 left-2 z-10 bg-white/30 backdrop-blur-xl p-4 rounded-md gap-2 flex flex-col items-start max-w-sm w-full">
-          <Count />
-          <ConnectedUser />
-          <PlayerConfig />
-        </div>
-        <Canvas>
-          <Skybox />  
-          <Scene />
-        </Canvas>
+    <KeyboardControls map={keyboardMap}>
+      <div className="absolute top-2 left-2 z-10 bg-white/30 backdrop-blur-xl p-4 rounded-md gap-2 flex flex-col items-start max-w-sm w-full">
+      <Count />
+      <ConnectedUser />
+      <PlayerConfig />
+      </div>
+      <Canvas camera={{ position: [0, 0, 10] }}>
+        <fog attach="fog" args={[0x000000, 0.0025]} />
+        <Skybox />
+        <Scene />
+      </Canvas>
       </KeyboardControls>
       <div className="absolute bottom-5 right-5 px-2 py-1 rounded gap-2 flex text-neutral-50 bg-sky-600">
         <ChatManager />
@@ -67,6 +77,14 @@ function Skybox() {
   const { scene } = useThree();
   const loader = new CubeTextureLoader();
   const texture = loader.load([
+
+    
+  'px.png', 'nx.png',
+  'py.png', 'ny.png',
+  'pz.png', 'nz.png'
+
+  ])
+
     "px.png",
     "nx.png",
     "py.png",
@@ -74,6 +92,7 @@ function Skybox() {
     "pz.png",
     "nz.png",
   ]);
+
 
   scene.background = texture;
   return null;

@@ -8,6 +8,7 @@ type Session = {
   nickname: string;
   name: string;
   password: string;
+  
 };
 
 export default function ChoosingSession({

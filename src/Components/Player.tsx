@@ -1,9 +1,10 @@
 import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Text } from '@react-three/drei'
+import { Text, useGLTF } from '@react-three/drei'
 import { Vector3 } from 'three'
 import * as THREE from 'three'
 import { RigidBody } from '@react-three/rapier'
+import playerObject from '/player.glb?url'
 
 interface PlayerProps {
   position: [number, number, number]
@@ -18,59 +19,28 @@ export function Player({ position, nickname, rotation, userId, isCurrentUser = f
   const playerRef = useRef<THREE.Group>(null)
   const nameRef = useRef<THREE.Group>(null)
 
-  // Animation de bob pour le joueur
+  // Bobbing animation for the player
   useFrame((state) => {
     if (playerRef.current && !isCurrentUser) {
       playerRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1
     }
     
-    // Le name tag regarde toujours la caméra
+    // Name tag always looks at camera
     if (nameRef.current) {
       nameRef.current.lookAt(state.camera.position)
     }
   })
 
+  const { scene: scence, nodes , materials } = useGLTF(playerObject)
+
   return (
     //TODO ADD ROTATION SYNC
     <group position={position} rotation={[0, rotation, 0]} ref={playerRef}>
-      {/* Corps du joueur - un simple cube coloré */}
 
-      <mesh position={[0, 0.5, 0]}>
-        <boxGeometry args={[0.6, 1, 0.3]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
+      <primitive object={scence.clone()} />
+   
       
-      {/* Tête du joueur */}
-      <mesh position={[0, 1.2, 0]}>
-        <boxGeometry args={[0.4, 0.4, 0.4]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Bras gauche */}
-      <mesh position={[-0.4, 0.3, 0]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Bras droit */}
-      <mesh position={[0.4, 0.3, 0]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Jambe gauche */}
-      <mesh position={[-0.15, -0.4, 0]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Jambe droite */}
-      <mesh position={[0.15, -0.4, 0]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Name tag au-dessus du joueur */}
+      {/* Name tag above player */}
       <group position={[0, 2, 0]} ref={nameRef}>
         <Text
           position={[0, 0, 0]}
@@ -81,7 +51,7 @@ export function Player({ position, nickname, rotation, userId, isCurrentUser = f
         >
           {userId}
         </Text>
-        {/* Fond du name tag */}
+        {/* Name tag background */}
         <mesh position={[0, 0, -0.01]}>
           <planeGeometry args={[userId.length * 0.2 + 0.4, 0.6]} />
           <meshBasicMaterial color="black" opacity={0.7} transparent />
