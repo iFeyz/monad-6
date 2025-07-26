@@ -18,14 +18,26 @@ import { Scene } from "./Components/Scene";
 import * as THREE from "three";
 import { useEffect } from "react";
 
-const keyboardMap = [
-  { name : "forward", keys: ["ArrowUp", "KeyZ"]},
-  { name : "backward", keys: ["ArrowDown", "KeyS"]},
-  { name : "left", keys: ["ArrowLeft", "KeyQ"]},
-  { name : "right", keys: ["ArrowRight", "KeyD"]},
-]
 
-function App() {
+import ChatManager from "./Components/ChatManager";
+import WalletManager from "./Components/WalletManager";
+import SessionManager from "./Components/SessionManager";
+
+
+const keyboardMap = [
+  { name: "forward", keys: ["ArrowUp", "KeyZ"] },
+  { name: "backward", keys: ["ArrowDown", "KeyS"] },
+  { name: "left", keys: ["ArrowLeft", "KeyQ"] },
+  { name: "right", keys: ["ArrowRight", "KeyD"] },
+];
+
+export default function App() {
+  useEffect(() => {
+    const handleClick = () => {
+      const canvas = document.querySelector("canvas");
+      if (canvas) canvas.requestPointerLock();
+    };
+
 
   useEffect(() => {
     const handleClick = () => {
@@ -52,18 +64,20 @@ function App() {
         <Scene />
       </Canvas>
       </KeyboardControls>
+      <div className="absolute bottom-5 right-5 px-2 py-1 rounded gap-2 flex text-neutral-50 bg-sky-600">
+        <ChatManager />
+        <WalletManager />
+        <SessionManager />
+      </div>
     </>
   );
 }
-
-
-export default App;
-
 
 function Skybox() {
   const { scene } = useThree();
   const loader = new CubeTextureLoader();
   const texture = loader.load([
+
     
   'px.png', 'nx.png',
   'py.png', 'ny.png',
@@ -71,8 +85,15 @@ function Skybox() {
 
   ])
 
+    "px.png",
+    "nx.png",
+    "py.png",
+    "ny.png",
+    "pz.png",
+    "nz.png",
+  ]);
+
+
   scene.background = texture;
   return null;
-  
 }
-
