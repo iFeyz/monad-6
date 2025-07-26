@@ -20,7 +20,7 @@ export const SpaceshipSpawner = () => {
         // Position aléatoire autour du spawner
         const spawnPosition = new Vector3(
             Math.random() * 20 - 10,  // -10 à +10
-            5,                        // En hauteur
+            2,                        // En hauteur
             Math.random() * 20 - 10   // -10 à +10
         )
         

@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { DirectionalLight } from 'three';
-import { RigidBody} from '@react-three/rapier'
+import { RigidBody} from '@react-three/rapier'
+import { useControls, folder } from "leva";
+import { useGLTF } from '@react-three/drei';
 
 // Noise functions shader code (same as original)
 const noiseFunctions = `
@@ -334,6 +336,255 @@ void main() {
 }
 `;
 
+// Shaders pour les cristaux
+const CrystalVertexShader = `
+    uniform float uTime;
+    uniform float uScale;
+    
+    varying vec3 vView;
+    varying vec3 vNormal;
+    varying vec2 vUv;
+    varying vec3 vPosition;
+    varying vec3 vLocalPosition;
+
+    void main() {
+        vUv = uv;
+        vNormal = normalize(normalMatrix * normal);
+        vPosition = position;
+        vLocalPosition = position;
+        
+        // Légère oscillation pour donner vie aux cristaux
+        vec3 scaledPosition = position * uScale;
+        scaledPosition.y += sin(uTime * 2.0 + position.x * 10.0) * 0.02;
+        
+        vec4 mvPosition = modelViewMatrix * vec4(scaledPosition, 1.0);
+        vView = -mvPosition.xyz;
+        gl_Position = projectionMatrix * mvPosition;
+    }
+`;
+
+const CrystalFragmentShader = `
+    uniform float uTime;
+    uniform float uAlpha;
+    uniform vec3 uColor;
+    uniform vec3 uRimColor;
+    uniform float uRimPower;
+    uniform float uBloomIntensity;
+
+    varying vec3 vView;
+    varying vec3 vNormal;
+    varying vec3 vLocalPosition;
+
+    void main() {
+        vec3 viewDir = normalize(vView);
+        vec3 normal = normalize(vNormal);
+        float rimDot = 1.0 - max(0.0, dot(viewDir, normal));
+        float rim = pow(rimDot, uRimPower);
+        
+        vec3 baseColor = uColor;
+        vec3 emissiveColor = rim * uRimColor * uBloomIntensity;
+        
+        // Ajout d'une variation de couleur basée sur le temps
+        vec3 timeColor = mix(uColor, uRimColor, sin(uTime + vLocalPosition.y * 5.0) * 0.5 + 0.5);
+        
+        vec3 finalColor = mix(baseColor, timeColor, 0.3) + emissiveColor;
+        float finalAlpha = mix(uAlpha, 1.0, rim * 0.5);
+        
+        gl_FragColor = vec4(finalColor, finalAlpha);
+    }
+`;
+
+// Fonction utilitaire pour calculer la hauteur du terrain (version JavaScript)
+const calculateTerrainHeight = (position: THREE.Vector3, planetParams: any) => {
+  // Simplifié pour les performances - utilise juste du bruit sinusoïdal
+  const x = position.x;
+  const y = position.y;  
+  const z = position.z;
+  
+  const noise = (Math.sin(x * planetParams.period * 10) + 
+                Math.cos(y * planetParams.period * 10) + 
+                Math.sin(z * planetParams.period * 10)) / 3;
+  
+  return Math.max(0, noise * planetParams.amplitude + planetParams.offset);
+};
+
+// Composant pour un cristal individuel
+const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha }: {
+  position: THREE.Vector3;
+  normal: THREE.Vector3;
+  scale: number;
+  planetRadius: number;
+  color: string;
+  rimColor: string;
+  alpha: number;
+}) => {
+
+  const meshRef = useRef<THREE.Group>(null);
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
+  
+  // Charger le modèle de cristal
+  const { scene } = useGLTF('/crystal.glb');
+  
+  // Créer le matériau shader pour le cristal
+  const crystalMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      vertexShader: CrystalVertexShader,
+      fragmentShader: CrystalFragmentShader,
+      uniforms: {
+        uTime: { value: 0 },
+        uScale: { value: 1 },
+        uAlpha: { value: alpha },
+        uColor: { value: new THREE.Color(color) },
+        uRimColor: { value: new THREE.Color(rimColor) },
+        uRimPower: { value: 2.0 },
+        uBloomIntensity: { value: 1.5 }
+      },
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.NormalBlending
+    });
+  }, [color, rimColor, alpha]);
+
+  // Calculer la taille relative au rayon de la planète
+  const finalScale = useMemo(() => {
+    const baseScale = planetRadius * 0.001; // Ajusté pour le modèle 3D
+    return baseScale * scale;
+  }, [planetRadius, scale]);
+
+  // Cloner et préparer la scène du cristal
+  const crystalScene = useMemo(() => {
+    if (!scene) return null;
+    
+    const clonedScene = scene.clone();
+    
+    // Appliquer le matériau à tous les meshes
+    clonedScene.traverse((child) => {
+      if (child.isMesh) {
+        child.material = crystalMaterial;
+      }
+    });
+    
+    return clonedScene;
+  }, [scene, crystalMaterial]);
+
+  // Positionner et orienter le cristal
+  useEffect(() => {
+    if (meshRef.current && crystalScene) {
+      meshRef.current.position.copy(position);
+      
+      // Orienter selon la normale
+      const up = new THREE.Vector3(0, 1, 0);
+      const quaternion = new THREE.Quaternion();
+      quaternion.setFromUnitVectors(up, normal);
+      meshRef.current.setRotationFromQuaternion(quaternion);
+      
+      meshRef.current.scale.setScalar(finalScale);
+    }
+  }, [position, normal, finalScale, crystalScene]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (materialRef.current) {
+        materialRef.current.uniforms.uTime.value = Date.now() * 0.001;
+      }
+    }, 100); // Mise à jour toutes les 100ms au lieu de chaque frame
+  
+    return () => clearInterval(interval);
+  }, []); 
+
+
+  if (!crystalScene) return null;
+  
+  return (
+    <group ref={meshRef} >
+      <primitive object={crystalScene} />
+    </group>
+  );
+};
+
+// Système de génération de cristaux
+const CrystalSystem = ({ planetParams, crystalParams }: { planetParams: any; crystalParams: any }) => {
+  
+  const crystalData = useMemo(() => {
+    const crystals = [];
+    const numCrystals = Math.min(8, Math.floor(planetParams.params.radius * 0.3)); // Maximum 8 cristaux par planète
+    
+    for (let i = 0; i < numCrystals; i++) {
+      // Générer une position aléatoire sur la sphère unitaire
+      const phi = Math.random() * Math.PI * 2;
+      const theta = Math.acos(2 * Math.random() - 1);
+      
+      const x = Math.sin(theta) * Math.cos(phi);
+      const y = Math.sin(theta) * Math.sin(phi);
+      const z = Math.cos(theta);
+      
+      // Position sur la sphère unitaire
+      const spherePosition = new THREE.Vector3(x, y, z);
+      
+      // Calculer la hauteur du terrain à cette position (même logique que le vertex shader)
+      const terrainHeight = calculateTerrainHeight(spherePosition, planetParams.params);
+      
+      // Rayon final APRÈS transformation du vertex shader : (radius + terrainHeight) * scale
+      const finalRadius = (planetParams.params.radius + terrainHeight) * planetParams.scale * 0.9;
+      
+      // Position finale sur la surface transformée
+      const surfacePosition = spherePosition.clone().multiplyScalar(finalRadius);
+      
+      // Ajouter la position de la planète
+      surfacePosition.add(planetParams.position);
+      
+      // La normale est la direction depuis le centre vers le point de surface
+      const normal = spherePosition.clone().normalize();
+      
+      // Taille aléatoire du cristal
+      const scale = crystalParams.minSize + Math.random() * (crystalParams.maxSize - crystalParams.minSize);
+      
+      crystals.push({
+        id: i,
+        position: surfacePosition,
+        normal: normal,
+        scale: scale
+      });
+    }
+    
+    return crystals;
+  }, [planetParams, crystalParams]);
+  return (
+    <group>
+      {crystalData.map(crystal => (
+      <Crystal 
+        position={crystal.position}
+        normal={crystal.normal}
+        scale={crystal.scale}
+        planetRadius={50} // Valeur fixe ou passer en prop
+        color={crystalParams.color}
+        rimColor={crystalParams.rimColor}
+        alpha={crystalParams.alpha}
+      />
+      ))}
+    </group>
+  );
+};
+
+// Add Crystal data interface
+interface CrystalData {
+  id: string;
+  chunkKey: string;
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+  rotationSpeed: THREE.Vector3;
+  scale: number;
+  crystalParams: {
+    color: string;
+    baseColor: string;
+    rimColor: string;
+    rimColor2: string;
+    alpha: number;
+    bloomIntensity: number;
+  };
+}
+
 interface PlanetData {
   id: string;
   chunkKey: string;
@@ -371,9 +622,10 @@ interface ChunkData {
   key: string;
   position: THREE.Vector3;
   planets: PlanetData[];
+  crystals: CrystalData[]; // Add crystals array
 }
 
-// Seeded random number generator for consistent planet generation
+// Seeded random number generator for consistent generation
 class SeededRandom {
   private seed: number;
 
@@ -387,68 +639,111 @@ class SeededRandom {
   }
 }
 
-// Individual Planet Component
-const GalaxyPlanet = ({ planetData }: { planetData: PlanetData }) => {
+// Individual Crystal Component wrapper for galaxy
+const GalaxyCrystal = ({ crystalData }: { crystalData: CrystalData }) => {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+
+    const group = groupRef.current;
+    const time = state.clock.elapsedTime;
+
+    // Update rotation
+    group.rotation.x += crystalData.rotationSpeed.x;
+    group.rotation.y += crystalData.rotationSpeed.y;
+    group.rotation.z += crystalData.rotationSpeed.z;
+
+    // Subtle floating animation
+    group.position.y = crystalData.position.y + Math.sin(time * 0.5) * 2;
+  });
+
+  return (
+    <RigidBody colliders={false}>
+      <group 
+        ref={groupRef}
+        position={crystalData.position}
+        rotation={crystalData.rotation}
+        scale={crystalData.scale}
+      >
+        <Crystal 
+          position={crystalData.position}
+          normal={crystalData.normal}
+          scale={crystalData.scale}
+          planetRadius={planetParams.radius}
+          color={crystalParams.color}
+          rimColor={crystalParams.rimColor}
+          alpha={crystalParams.alpha}
+        />
+      </group>
+    </RigidBody>
+  );
+};
+
+const GalaxyPlanet = ({ planetData, crystalParams }: { planetData: PlanetData, crystalParams: any }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
 
   const geometry = useMemo(() => {
-    const geo = new THREE.SphereGeometry(1, 24, 24); // Reduced detail for performance
-    geo.computeTangents?.();
+    const geo = new THREE.SphereGeometry(1, 16, 12);    geo.computeTangents?.();
     return geo;
   }, []);
 
+  const shaderUniforms = useMemo(() => ({
+    type: { value: planetData.params.type },
+    radius: { value: planetData.params.radius },
+    amplitude: { value: planetData.params.amplitude },
+    sharpness: { value: planetData.params.sharpness },
+    offset: { value: planetData.params.offset },
+    period: { value: planetData.params.period },
+    persistence: { value: planetData.params.persistence },
+    lacunarity: { value: planetData.params.lacunarity },
+    octaves: { value: planetData.params.octaves },
+    bumpStrength: { value: planetData.material.bumpStrength },
+    bumpOffset: { value: planetData.material.bumpOffset },
+    ambientIntensity: { value: 0.2 },
+    diffuseIntensity: { value: 1 },
+    specularIntensity: { value: 2 },
+    shininess: { value: 10 },
+    lightDirection: { value: new THREE.Vector3(1, 1, 1) },
+    lightColor: { value: new THREE.Color(0xffffff) },
+    color1: { value: new THREE.Color(planetData.colors.color1) },
+    color2: { value: new THREE.Color(planetData.colors.color2) },
+    color3: { value: new THREE.Color(planetData.colors.color3) },
+    color4: { value: new THREE.Color(planetData.colors.color4) },
+    color5: { value: new THREE.Color(planetData.colors.color5) },
+    transition2: { value: 0.071 },
+    transition3: { value: 0.215 },
+    transition4: { value: 0.372 },
+    transition5: { value: 1.2 },
+    blend12: { value: 0.152 },
+    blend23: { value: 0.152 },
+    blend34: { value: 0.104 },
+    blend45: { value: 0.168 },
+  }), [planetData]);
+
+
   useFrame((state) => {
-    if (!meshRef.current || !materialRef.current) return;
-
+    if (!meshRef.current) return;
+  
     const mesh = meshRef.current;
-    const material = materialRef.current;
-
+  
     // Update rotation
     mesh.rotation.x += planetData.rotationSpeed.x;
     mesh.rotation.y += planetData.rotationSpeed.y;
     mesh.rotation.z += planetData.rotationSpeed.z;
-
+  
     // Update position with subtle movement
     const time = state.clock.elapsedTime;
     mesh.position.x = planetData.position.x + Math.sin(time * planetData.movementSpeed.x) * 2;
     mesh.position.y = planetData.position.y + Math.cos(time * planetData.movementSpeed.y) * 1;
     mesh.position.z = planetData.position.z + Math.sin(time * planetData.movementSpeed.z) * 2;
-
-    // Update uniforms
-    const u = material.uniforms;
-    u.type.value = planetData.params.type;
-    u.radius.value = planetData.params.radius;
-    u.amplitude.value = planetData.params.amplitude;
-    u.sharpness.value = planetData.params.sharpness;
-    u.offset.value = planetData.params.offset;
-    u.period.value = planetData.params.period;
-    u.persistence.value = planetData.params.persistence;
-    u.lacunarity.value = planetData.params.lacunarity;
-    u.octaves.value = planetData.params.octaves;
-
-    u.bumpStrength.value = planetData.material.bumpStrength;
-    u.bumpOffset.value = planetData.material.bumpOffset;
-
-    u.color1.value.set(planetData.colors.color1);
-    u.color2.value.set(planetData.colors.color2);
-    u.color3.value.set(planetData.colors.color3);
-    u.color4.value.set(planetData.colors.color4);
-    u.color5.value.set(planetData.colors.color5);
-
-    // Update bounding sphere for frustum culling
-    const maxEffectiveRadius = planetData.params.radius + planetData.params.amplitude + Math.max(0, planetData.params.offset);
-    
-    if (!mesh.geometry.boundingSphere) {
-      mesh.geometry.boundingSphere = new THREE.Sphere();
-    }
-    mesh.geometry.boundingSphere.set(new THREE.Vector3(0, 0, 0), maxEffectiveRadius * planetData.scale);
   });
 
   return (
    // <RigidBody type="fixed" colliders="hull">
    <group>
-           <RigidBody type="fixed" colliders="hull">
+           <RigidBody colliders={false}>
                 <mesh position={[planetData.position.x, planetData.position.y, planetData.position.z]}>
                     <sphereGeometry args={[planetData.params.rng.random() * 30 * planetData.scale + 50]} />
                     
@@ -467,49 +762,18 @@ const GalaxyPlanet = ({ planetData }: { planetData: PlanetData }) => {
         ref={materialRef}
         vertexShader={planetVertexShader}
         fragmentShader={planetFragmentShader}
-        uniforms={{
-          type: { value: planetData.params.type },
-          radius: { value: planetData.params.radius },
-          amplitude: { value: planetData.params.amplitude },
-          sharpness: { value: planetData.params.sharpness },
-          offset: { value: planetData.params.offset },
-          period: { value: planetData.params.period },
-          persistence: { value: planetData.params.persistence },
-          lacunarity: { value: planetData.params.lacunarity },
-          octaves: { value: planetData.params.octaves },
-
-          bumpStrength: { value: planetData.material.bumpStrength },
-          bumpOffset: { value: planetData.material.bumpOffset },
-
-          ambientIntensity: { value: 0.2 },
-          diffuseIntensity: { value: 1 },
-          specularIntensity: { value: 2 },
-          shininess: { value: 10 },
-          lightDirection: { value: new THREE.Vector3(1, 1, 1) },
-          lightColor: { value: new THREE.Color(0xffffff) },
-
-          color1: { value: new THREE.Color(planetData.colors.color1) },
-          color2: { value: new THREE.Color(planetData.colors.color2) },
-          color3: { value: new THREE.Color(planetData.colors.color3) },
-          color4: { value: new THREE.Color(planetData.colors.color4) },
-          color5: { value: new THREE.Color(planetData.colors.color5) },
-          transition2: { value: 0.071 },
-          transition3: { value: 0.215 },
-          transition4: { value: 0.372 },
-          transition5: { value: 1.2 },
-          blend12: { value: 0.152 },
-          blend23: { value: 0.152 },
-          blend34: { value: 0.104 },
-          blend45: { value: 0.168 },
-        }}
-        
+        uniforms={shaderUniforms}
       />
     </mesh>
+    <CrystalSystem 
+    planetParams={planetData}
+    crystalParams={crystalParams}
+  />
+
     </group>
  
   );
 };
-
 // Chunk-based Galaxy System
 export const ProceduralGalaxy = () => {
   const { camera } = useThree();
@@ -518,11 +782,24 @@ export const ProceduralGalaxy = () => {
   const updateInterval = useRef(0);
 
   // Galaxy settings
-  const CHUNK_SIZE = 3000; // Size of each chunk (increased for more space)
-  const RENDER_DISTANCE = 2; // How many chunks around the camera to render
-  const PLANETS_PER_CHUNK = 0; // Minimum planets per chunk
-  const MAX_PLANETS_PER_CHUNK = 3; // Maximum 0-2 planets per chunk
-  const UPDATE_FREQUENCY = 30; // Update chunks every 30 frames
+  const CHUNK_SIZE = 3000;
+  const RENDER_DISTANCE = 2;
+  const PLANETS_PER_CHUNK = 0;
+  const MAX_PLANETS_PER_CHUNK = 3;
+  const CRYSTALS_PER_CHUNK = 0;
+  const MAX_CRYSTALS_PER_CHUNK = 5; // More crystals than planets for magical feel
+  const UPDATE_FREQUENCY = 120; // Mise à jour 4 fois moins fréquente
+
+  const crystalParams = useControls('Crystals', {
+    enabled: { value: true },
+    density: { value: 1.0, min: 0.1, max: 3.0, step: 0.1 },
+    minSize: { value: 1.0, min: 0.5, max: 3.0, step: 0.1 },
+    maxSize: { value: 3.0, min: 1.0, max: 8.0, step: 0.1 },
+    color: { value: '#b842e5' },
+    rimColor: { value: '#ffff00' },
+    alpha: { value: 0.8, min: 0.1, max: 1.0, step: 0.1 },
+  });
+
 
   const colorSchemes = [
     {
@@ -532,10 +809,33 @@ export const ProceduralGalaxy = () => {
       color4: '#b49de8',
       color5: '#dcd3ff'
     },
+  ];
 
-    // add more color schemes here
-    
-   
+  const crystalColorSchemes = [
+    {
+      color: '#b842e5',
+      baseColor: '#ffffff',
+      rimColor: '#ffff00',
+      rimColor2: '#ff00ff',
+      alpha: 0.3,
+      bloomIntensity: 1.5
+    },
+    {
+      color: '#42e5f5',
+      baseColor: '#ffffff',
+      rimColor: '#00ffff',
+      rimColor2: '#0080ff',
+      alpha: 0.4,
+      bloomIntensity: 2.0
+    },
+    {
+      color: '#e542b8',
+      baseColor: '#ffccff',
+      rimColor: '#ff4080',
+      rimColor2: '#ff0040',
+      alpha: 0.2,
+      bloomIntensity: 1.8
+    },
   ];
 
   // Generate chunk key from position
@@ -546,32 +846,23 @@ export const ProceduralGalaxy = () => {
     return `${chunkX},${chunkY},${chunkZ}`;
   };
 
-  // Generate planets for a chunk using seeded randomization
-  const generateChunkPlanets = (chunkKey: string): PlanetData[] => {
+  // Generate crystals for a chunk
+  const generateChunkCrystals = (chunkKey: string, rng: SeededRandom): CrystalData[] => {
     const [chunkX, chunkY, chunkZ] = chunkKey.split(',').map(Number);
-    const chunkCenter = new THREE.Vector3(
-      chunkX * CHUNK_SIZE + CHUNK_SIZE / 2,
-      chunkY * CHUNK_SIZE + CHUNK_SIZE / 2,
-      chunkZ * CHUNK_SIZE + CHUNK_SIZE / 2
-    );
-
-    // Use chunk coordinates as seed for consistent generation
-    const seed = chunkX * 73856093 ^ chunkY * 19349663 ^ chunkZ * 83492791;
-    const rng = new SeededRandom(Math.abs(seed));
     
-
-    // Skip this chunk if random roll doesn't generate any planets (more empty space)
-    if (rng.random() < 0.4) { // 40% chance of empty chunks
-      return []; 
+    // 60% chance of having crystals in a chunk
+    if (rng.random() < 0.4) {
+      return [];
     }
-    const planetCount = Math.floor(rng.random() * (MAX_PLANETS_PER_CHUNK - PLANETS_PER_CHUNK + 1)) + PLANETS_PER_CHUNK;
-    const planets: PlanetData[] = [];
 
-    for (let i = 0; i < planetCount; i++) {
+    const crystalCount = Math.floor(rng.random() * (MAX_CRYSTALS_PER_CHUNK - CRYSTALS_PER_CHUNK + 1)) + CRYSTALS_PER_CHUNK;
+    const crystals: CrystalData[] = [];
+
+    for (let i = 0; i < crystalCount; i++) {
       // Random position within chunk
       const position = new THREE.Vector3(
         chunkX * CHUNK_SIZE + rng.random() * CHUNK_SIZE,
-        chunkY * CHUNK_SIZE + (rng.random() - 0.5) * CHUNK_SIZE * 0.3, // Flatter galaxy
+        chunkY * CHUNK_SIZE + (rng.random() - 0.5) * CHUNK_SIZE * 0.2, // Keep crystals in a flatter distribution
         chunkZ * CHUNK_SIZE + rng.random() * CHUNK_SIZE
       );
 
@@ -582,27 +873,77 @@ export const ProceduralGalaxy = () => {
         rng.random() * Math.PI * 2
       );
 
-      // Random rotation speeds (slow)
+      // Random rotation speeds (very slow for mystical effect)
+      const rotationSpeed = new THREE.Vector3(
+        (rng.random() - 0.5) * 0.002,
+        (rng.random() - 0.5) * 0.002,
+        (rng.random() - 0.5) * 0.002
+      );
+
+      // Random scale (various sizes)
+      const scale = rng.random() * 15 + 5; // 5 to 20
+
+      // Random crystal color scheme
+      const colorScheme = crystalColorSchemes[Math.floor(rng.random() * crystalColorSchemes.length)];
+
+      crystals.push({
+        id: `crystal-${chunkKey}-${i}`,
+        chunkKey,
+        position,
+        rotation,
+        rotationSpeed,
+        scale,
+        crystalParams: colorScheme
+      });
+    }
+
+    return crystals;
+  };
+
+  // Generate planets for a chunk using seeded randomization
+  const generateChunkPlanets = (chunkKey: string): PlanetData[] => {
+    const [chunkX, chunkY, chunkZ] = chunkKey.split(',').map(Number);
+
+    const seed = chunkX * 73856093 ^ chunkY * 19349663 ^ chunkZ * 83492791;
+    const rng = new SeededRandom(Math.abs(seed));
+    
+    if (rng.random() < 0.4) {
+      return []; 
+    }
+    
+    const planetCount = Math.floor(rng.random() * (MAX_PLANETS_PER_CHUNK - PLANETS_PER_CHUNK + 1)) + PLANETS_PER_CHUNK;
+    const planets: PlanetData[] = [];
+
+    for (let i = 0; i < planetCount; i++) {
+      const position = new THREE.Vector3(
+        chunkX * CHUNK_SIZE + rng.random() * CHUNK_SIZE,
+        chunkY * CHUNK_SIZE + (rng.random() - 0.5) * CHUNK_SIZE * 0.3,
+        chunkZ * CHUNK_SIZE + rng.random() * CHUNK_SIZE
+      );
+
+      const rotation = new THREE.Euler(
+        rng.random() * Math.PI * 2,
+        rng.random() * Math.PI * 2,
+        rng.random() * Math.PI * 2
+      );
+
       const rotationSpeed = new THREE.Vector3(
         (rng.random() - 0.5) * 0.001,
         (rng.random() - 0.5) * 0.001,
         (rng.random() - 0.5) * 0.001
       );
 
-      // Random movement speeds (very slow)
       const movementSpeed = new THREE.Vector3(
         (rng.random() - 0.5) * 0.05,
         (rng.random() - 0.5) * 0.05,
         (rng.random() - 0.5) * 0.05
       );
 
-      // Random scale (much larger planets for better visibility in sparse galaxy)
-      const scale = rng.random() * 2.5 + 1.0; // 1.0 to 3.5
+      const scale = rng.random() * 2.5 + 1.0;
 
-      // Random planet parameters (larger for visibility)
       const params = {
         type: Math.floor(rng.random() * 3) + 1,
-        radius: rng.random() * 30 ,
+        radius: rng.random() * 30,
         amplitude: rng.random() * 6 + 2,
         sharpness: rng.random() * 5 + 1,
         offset: (rng.random() - 0.5) * 0.5,
@@ -613,17 +954,15 @@ export const ProceduralGalaxy = () => {
         rng: rng
       };
 
-      // Random color scheme
       const colorScheme = colorSchemes[Math.floor(rng.random() * colorSchemes.length)];
 
-      // Random material properties
       const material = {
         bumpStrength: rng.random() * 1.5 + 0.5,
         bumpOffset: rng.random() * 0.005 + 0.001
       };
 
       planets.push({
-        id: `${chunkKey}-${i}`,
+        id: `planet-${chunkKey}-${i}`,
         chunkKey,
         position,
         rotation,
@@ -646,7 +985,6 @@ export const ProceduralGalaxy = () => {
     
     const newChunks = new Map<string, ChunkData>();
     
-    // Generate chunks around camera
     for (let x = -RENDER_DISTANCE; x <= RENDER_DISTANCE; x++) {
       for (let y = -RENDER_DISTANCE; y <= RENDER_DISTANCE; y++) {
         for (let z = -RENDER_DISTANCE; z <= RENDER_DISTANCE; z++) {
@@ -657,6 +995,12 @@ export const ProceduralGalaxy = () => {
             newChunks.set(chunkKey, chunks.get(chunkKey)!);
           } else {
             const planets = generateChunkPlanets(chunkKey);
+            
+            // Generate crystals with separate RNG to avoid affecting planet generation
+            const crystalSeed = chunkKey.split(',').map(Number).reduce((a, b) => a + b, 0) * 31337;
+            const crystalRng = new SeededRandom(Math.abs(crystalSeed));
+            const crystals = generateChunkCrystals(chunkKey, crystalRng);
+            
             const [chunkX, chunkY, chunkZ] = chunkKey.split(',').map(Number);
             
             newChunks.set(chunkKey, {
@@ -666,7 +1010,8 @@ export const ProceduralGalaxy = () => {
                 chunkY * CHUNK_SIZE + CHUNK_SIZE / 2,
                 chunkZ * CHUNK_SIZE + CHUNK_SIZE / 2
               ),
-              planets
+              planets,
+              crystals
             });
           }
         }
@@ -683,13 +1028,11 @@ export const ProceduralGalaxy = () => {
     if (updateInterval.current >= UPDATE_FREQUENCY) {
       updateInterval.current = 0;
       
-      
       const cameraPos = camera.position;
       const distance = lastCameraPosition.current.distanceTo(cameraPos);
       
-      if (distance > CHUNK_SIZE * 0.01) { 
+      if (distance > CHUNK_SIZE * 0.1) { 
         lastCameraPosition.current.copy(cameraPos);
-        console.log("updateChunks", cameraPos);
         updateChunks();
       }
     }
@@ -700,25 +1043,27 @@ export const ProceduralGalaxy = () => {
     updateChunks();
   }, []);
 
-  // Render all planets from active chunks
-  const allPlanets = useMemo(() => {
+  // Render all planets and crystals from active chunks
+  const allObjects = useMemo(() => {
     const planets: PlanetData[] = [];
+    const crystals: CrystalData[] = [];
+    
     chunks.forEach(chunk => {
       planets.push(...chunk.planets);
+      crystals.push(...chunk.crystals);
     });
-    return planets;
+    
+    return { planets, crystals };
   }, [chunks]);
 
   return (
     <group>
-      {allPlanets.map((planetData) => (
-        <>
-        
- 
-            <GalaxyPlanet key={planetData.id} planetData={planetData} />
-      
-        </>
+      {/* Render Planets */}
+      {allObjects.planets.map((planetData) => (
+        <GalaxyPlanet key={planetData.id} planetData={planetData} crystalParams={crystalParams} />
       ))}
+      
+
     </group>
   );
 };

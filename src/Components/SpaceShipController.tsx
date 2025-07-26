@@ -81,7 +81,7 @@ export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
         if (camera instanceof THREE.PerspectiveCamera) {
             camera.fov = 80
             camera.near = 0.1
-            camera.far = 5000
+            camera.far = 1000
             camera.aspect = size.width / size.height
             camera.updateProjectionMatrix()
         }
@@ -180,11 +180,22 @@ export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
         }
 
         // === CAMERA FOLLOW LOGIC ===
-        const cameraTargetPos = shipPosition.clone().add(
-            new Vector3(0, CAMERA_OFFSET_Y, CAMERA_OFFSET_Z).applyQuaternion(currentRotation.current)
-        )
-        camera.position.lerp(cameraTargetPos, 0.05)
-        camera.quaternion.slerp(currentRotation.current, 0.05)
+        const cameraOffset = new Vector3(0, CAMERA_OFFSET_Y, CAMERA_OFFSET_Z)
+        .applyQuaternion(currentRotation.current)
+    const cameraTargetPos = shipPosition.clone().add(cameraOffset)
+    
+    // Interpolation plus douce pour éviter les saccades
+    camera.position.lerp(cameraTargetPos, 0.1)
+    camera.quaternion.slerp(currentRotation.current, 0.1)
+    
+    // Force la mise à jour complète de la caméra
+    camera.updateMatrixWorld(true)
+    camera.updateProjectionMatrix()
+    
+    // Mise à jour manuelle du frustum pour les objets distants
+    const frustum = new THREE.Frustum()
+    const cameraMatrix = new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+    frustum.setFromProjectionMatrix(cameraMatrix)
     }, [
         get,
         THRUST_POWER,

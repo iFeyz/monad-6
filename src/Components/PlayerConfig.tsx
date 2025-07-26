@@ -21,6 +21,7 @@ export function PlayerConfig() {
     const [nickname, setNickname] = useNicknames()
     const myId = useMyId()
     const setPlayerCamera = usePlayerStore(state => state.setPlayerCamera)
+    const setPlayerPosition = usePlayerStore(state => state.setPlayerPosition)
     const playerStateSyncManagerId = myId || "";
 
     const {
@@ -59,6 +60,7 @@ export function PlayerConfig() {
 
     const handleSpawnPlayer = () => {
         if (myId) {
+            setPlayerPosition(myId, new THREE.Vector3(10, 0, 0));
             updateSpawned(true)
             setPlayerCamera(myId || "", true);
         }

@@ -37,8 +37,7 @@ function App() {
     return () => window.removeEventListener("click", handleClick)
   }, [])
   
- const scene = new THREE.Scene();
- scene.fog = new THREE.Fog( 0x000000, 0.0025 );
+
   return (
     <>
     <KeyboardControls map={keyboardMap}>
@@ -47,7 +46,8 @@ function App() {
       <ConnectedUser />
       <PlayerConfig />
       </div>
-      <Canvas>
+      <Canvas camera={{ position: [0, 0, 10] }}>
+        <fog attach="fog" args={[0x000000, 0.0025]} />
         <Skybox />
         <Scene />
       </Canvas>

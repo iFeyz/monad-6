@@ -3,6 +3,7 @@ import { useControls } from 'leva';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame  } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
+import { useGLTF } from "@react-three/drei";
 
 // Noise functions shader code
 const noiseFunctions = `
@@ -382,6 +383,228 @@ void main() {
 }
 `;
 
+// Shaders pour les cristaux
+const CrystalVertexShader = `
+    uniform float uTime;
+    uniform float uScale;
+    
+    varying vec3 vView;
+    varying vec3 vNormal;
+    varying vec2 vUv;
+    varying vec3 vPosition;
+    varying vec3 vLocalPosition;
+
+    void main() {
+        vUv = uv;
+        vNormal = normalize(normalMatrix * normal);
+        vPosition = position;
+        vLocalPosition = position;
+        
+        // Légère oscillation pour donner vie aux cristaux
+        vec3 scaledPosition = position * uScale;
+        scaledPosition.y += sin(uTime * 2.0 + position.x * 10.0) * 0.02;
+        
+        vec4 mvPosition = modelViewMatrix * vec4(scaledPosition, 1.0);
+        vView = -mvPosition.xyz;
+        gl_Position = projectionMatrix * mvPosition;
+    }
+`;
+
+const CrystalFragmentShader = `
+    uniform float uTime;
+    uniform float uAlpha;
+    uniform vec3 uColor;
+    uniform vec3 uRimColor;
+    uniform float uRimPower;
+    uniform float uBloomIntensity;
+
+    varying vec3 vView;
+    varying vec3 vNormal;
+    varying vec3 vLocalPosition;
+
+    void main() {
+        vec3 viewDir = normalize(vView);
+        vec3 normal = normalize(vNormal);
+        float rimDot = 1.0 - max(0.0, dot(viewDir, normal));
+        float rim = pow(rimDot, uRimPower);
+        
+        vec3 baseColor = uColor;
+        vec3 emissiveColor = rim * uRimColor * uBloomIntensity;
+        
+        // Ajout d'une variation de couleur basée sur le temps
+        vec3 timeColor = mix(uColor, uRimColor, sin(uTime + vLocalPosition.y * 5.0) * 0.5 + 0.5);
+        
+        vec3 finalColor = mix(baseColor, timeColor, 0.3) + emissiveColor;
+        float finalAlpha = mix(uAlpha, 1.0, rim * 0.5);
+        
+        gl_FragColor = vec4(finalColor, finalAlpha);
+    }
+`;
+
+// Fonction utilitaire pour calculer la hauteur du terrain (version JavaScript)
+const calculateTerrainHeight = (position: THREE.Vector3, planetParams: any) => {
+  // Simplifié pour les performances - utilise juste du bruit sinusoïdal
+  const x = position.x;
+  const y = position.y;  
+  const z = position.z;
+  
+  const noise = (Math.sin(x * planetParams.period * 10) + 
+                Math.cos(y * planetParams.period * 10) + 
+                Math.sin(z * planetParams.period * 10)) / 3;
+  
+  return Math.max(0, noise * planetParams.amplitude + planetParams.offset);
+};
+
+// Composant pour un cristal individuel
+const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha }: {
+  position: THREE.Vector3;
+  normal: THREE.Vector3;
+  scale: number;
+  planetRadius: number;
+  color: string;
+  rimColor: string;
+  alpha: number;
+}) => {
+  const meshRef = useRef<THREE.Group>(null);
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
+  
+  // Charger le modèle de cristal
+  const { scene } = useGLTF('/crystal.glb');
+  
+  // Créer le matériau shader pour le cristal
+  const crystalMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      vertexShader: CrystalVertexShader,
+      fragmentShader: CrystalFragmentShader,
+      uniforms: {
+        uTime: { value: 0 },
+        uScale: { value: 1 },
+        uAlpha: { value: alpha },
+        uColor: { value: new THREE.Color(color) },
+        uRimColor: { value: new THREE.Color(rimColor) },
+        uRimPower: { value: 2.0 },
+        uBloomIntensity: { value: 1.5 }
+      },
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.NormalBlending
+    });
+  }, [color, rimColor, alpha]);
+
+  // Calculer la taille relative au rayon de la planète
+  const finalScale = useMemo(() => {
+    const baseScale = planetRadius * 0.001; // Ajusté pour le modèle 3D
+    return baseScale * scale;
+  }, [planetRadius, scale]);
+
+  // Cloner et préparer la scène du cristal
+  const crystalScene = useMemo(() => {
+    if (!scene) return null;
+    
+    const clonedScene = scene.clone();
+    
+    // Appliquer le matériau à tous les meshes
+    clonedScene.traverse((child) => {
+      if (child.isMesh) {
+        child.material = crystalMaterial;
+      }
+    });
+    
+    return clonedScene;
+  }, [scene, crystalMaterial]);
+
+  // Positionner et orienter le cristal
+  useEffect(() => {
+    if (meshRef.current && crystalScene) {
+      meshRef.current.position.copy(position);
+      
+      // Orienter selon la normale
+      const up = new THREE.Vector3(0, 1, 0);
+      const quaternion = new THREE.Quaternion();
+      quaternion.setFromUnitVectors(up, normal);
+      meshRef.current.setRotationFromQuaternion(quaternion);
+      
+      meshRef.current.scale.setScalar(finalScale);
+    }
+  }, [position, normal, finalScale, crystalScene]);
+
+  useFrame((state) => {
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+    }
+  });
+
+  if (!crystalScene) return null;
+
+  return (
+    <group ref={meshRef} >
+      <primitive object={crystalScene} />
+    </group>
+  );
+};
+
+// Système de génération de cristaux
+const CrystalSystem = ({ planetParams, crystalParams }: { planetParams: any; crystalParams: any }) => {
+  const crystalData = useMemo(() => {
+    if (!crystalParams.enabled) return [];
+    
+    const crystals = [];
+    const numCrystals = Math.floor(planetParams.radius * crystalParams.density);
+    
+    for (let i = 0; i < numCrystals; i++) {
+      // Générer une position aléatoire sur la sphère unitaire
+      const phi = Math.random() * Math.PI * 2;
+      const theta = Math.acos(2 * Math.random() - 1);
+      
+      const x = Math.sin(theta) * Math.cos(phi);
+      const y = Math.sin(theta) * Math.sin(phi);
+      const z = Math.cos(theta);
+      
+      const basePosition = new THREE.Vector3(x, y, z);
+      
+      // Calculer la hauteur du terrain à cette position
+      const terrainHeight = calculateTerrainHeight(basePosition, planetParams);
+      
+      // Position finale sur la surface de la planète
+      const surfaceRadius = planetParams.radius - 1;
+      const surfacePosition = basePosition.clone().multiplyScalar(surfaceRadius);
+      
+      // La normale est la direction depuis le centre vers le point de surface
+      const normal = basePosition.clone().normalize();
+      
+      // Taille aléatoire du cristal
+      const scale = crystalParams.minSize + Math.random() * (crystalParams.maxSize - crystalParams.minSize);
+      
+      crystals.push({
+        id: i,
+        position: surfacePosition,
+        normal: normal,
+        scale: scale
+      });
+    }
+    
+    return crystals;
+  }, [planetParams, crystalParams]);
+
+  return (
+    <group>
+      {crystalData.map(crystal => (
+        <Crystal
+          key={crystal.id}
+          position={crystal.position}
+          normal={crystal.normal}
+          scale={crystal.scale}
+          planetRadius={planetParams.radius}
+          color={crystalParams.color}
+          rimColor={crystalParams.rimColor}
+          alpha={crystalParams.alpha}
+        />
+      ))}
+    </group>
+  );
+};
+
 // Atmosphere component
 const Atmosphere = ({ params, planetRadius }: { params: any, planetRadius: number }) => {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -484,6 +707,17 @@ export const ProceduralPlanet = () => {
       octaves: { value: 5, min: 1, max: 15, step: 1 },
       undulation: { value: 0.0, min: 0, max: 1 },
     });
+
+    // Nouveaux contrôles pour les cristaux
+    const crystalParams = useControls('Crystals', {
+      enabled: { value: true },
+      density: { value: 1.0, min: 0.1, max: 3.0, step: 0.1 },
+      minSize: { value: 1.0, min: 0.5, max: 3.0, step: 0.1 },
+      maxSize: { value: 3.0, min: 1.0, max: 8.0, step: 0.1 },
+      color: { value: '#b842e5' },
+      rimColor: { value: '#ffff00' },
+      alpha: { value: 0.8, min: 0.1, max: 1.0, step: 0.1 },
+    });
   
     const lightingParams = useControls('Lighting', {
       ambientIntensity: { value: 0.2, min: 0, max: 1 },
@@ -515,7 +749,7 @@ export const ProceduralPlanet = () => {
     });
   
     const geometry = useMemo(() => {
-      const geo = new THREE.SphereGeometry(1, 16, 16); // Base geometry with radius 1
+      const geo = new THREE.SphereGeometry(1, 64, 64); // Résolution plus élevée pour de meilleurs détails
       geo.computeTangents?.(); // optional, in case of undefined
       return geo;
     }, []);
@@ -564,7 +798,6 @@ export const ProceduralPlanet = () => {
       u.blend34.value = colorParams.blend34;
       u.blend45.value = colorParams.blend45;
 
-    
       const maxEffectiveRadius = planetParams.radius + planetParams.amplitude + Math.max(0, planetParams.offset);
 
       if (!mesh.geometry.boundingSphere) {
@@ -572,27 +805,18 @@ export const ProceduralPlanet = () => {
       }
 
       mesh.geometry.boundingSphere.set(new THREE.Vector3(0, 0, 0), maxEffectiveRadius);
-
       mesh.geometry.boundingSphere.needsUpdate = true;
     });
   
     return (
-   
       <group position={[0, -10, -80]}>
-        <RigidBody type="fixed" colliders="hull">
-            <mesh>
-                <sphereGeometry args={[30]} />
-                <meshPhongMaterial color="#ff0000" opacity={0.1} transparent />
-
-            </mesh>
-        </RigidBody>    
+        {/* Planète principale */}
         <mesh ref={planetMeshRef} geometry={geometry}> 
           <shaderMaterial
             ref={materialRef}
             vertexShader={planetVertexShader}
             fragmentShader={planetFragmentShader}
             uniforms={{
-          
               type: { value: 2 },
               radius: { value: 20 },
               amplitude: { value: 1 },
@@ -629,8 +853,14 @@ export const ProceduralPlanet = () => {
             }}
           />
         </mesh>
-      {/* Not rendering astmosphere for now */}
+
+        {/* Système de cristaux */}
+        <CrystalSystem 
+          planetParams={planetParams}
+          crystalParams={crystalParams}
+        />
+
+        {/* Atmosphère désactivée pour le moment */}
       </group>
-      
     );
   };

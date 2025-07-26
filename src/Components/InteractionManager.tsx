@@ -9,12 +9,10 @@ export function InteractionManager() {
     const triggerInteractionsForPlayer = useInteractionStore(state => state.triggerInteractionsForPlayer)
     const myId = useMyId()
 
-    // Calcul des interactions à chaque frame
     useFrame(() => {
         updateInteractions()
     })
 
-    // Gestionnaire de clavier global
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             const key = event.key.toLowerCase()

@@ -6,6 +6,7 @@ import manta from "/manta.glb?url"; // Assuming it uses the same model
 import { useShipStore } from "../Stores/shipStore";
 import { group } from "console";
 import { Text } from "@react-three/drei";
+import RocketThrust from "./RocketThrust";
 
 type ShipOtherProps = {
     shipId: string;
@@ -31,20 +32,21 @@ export default function ShipOther({ shipId, position, rotation }: ShipOtherProps
         return (
             <RigidBody
                 ref={rb}
-                colliders="hull"
+                colliders={false}
                 scale={5}
-                gravityScale={0}
+                enabledRotations={[true, true, true]}
+                enabledTranslations={[true, true, true]}
                 // For other players' ships, we want to control their position/rotation
                 // from the synced data, so 'kinematicPosition' is appropriate.
                 // This prevents physics from overriding the synced state.
-                type="kinematicPosition"
+                //type="kinematicPosition"
                 // Optionally set initial position directly as well,
                 // but the useEffect will handle updates
                 position={position}
                 rotation={rotation}
             >
-                <group rotation={[0, Math.PI / 2, 0]}>
-                    <primitive object={spaceshipScene.clone()} scale={2} />
+                <group>
+                    <RocketThrust />
                 </group>
                 <group position={[0, 0.5, 0]}>
                     <Text
@@ -66,21 +68,23 @@ export default function ShipOther({ shipId, position, rotation }: ShipOtherProps
     return (
         <RigidBody
             ref={rb}
-            colliders="hull"
+            colliders={false}
             scale={5}
             gravityScale={0}
+            enabledRotations={[true, true, true]}
+            enabledTranslations={[true, true, true]}
             // For other players' ships, we want to control their position/rotation
             // from the synced data, so 'kinematicPosition' is appropriate.
             // This prevents physics from overriding the synced state.
-            type="kinematicPosition"
+            //type="kinematicPosition"
             // Optionally set initial position directly as well,
             // but the useEffect will handle updates
             position={position}
             rotation={rotation}
         >
-            <group rotation={[0, Math.PI / 2, 0]}>
-                <primitive object={spaceshipScene.clone()} scale={2} />
-            </group>
+            <group>
+            <RocketThrust />           
+             </group>
 
 
         </RigidBody>

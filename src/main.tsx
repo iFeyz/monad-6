@@ -11,7 +11,7 @@ createRoot(document.getElementById('root')!).render(
         sessionParams={{
           apiKey: "2UyoWWPeshm6dVAzSbiuCIljeH5hPmi0eu6jVVQakZ",
           appId: "com.exampsssqsdsdssle.myapp",
-          name: "tests-sesdsdsqdqsqsdsqddssssssionsss",
+          name: "tests-sesdsdsdsdsqdqsqsdsqddssssssionsss",
           password: "test-padsdqssword"
           }}
       >

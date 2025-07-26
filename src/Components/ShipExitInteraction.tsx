@@ -39,12 +39,12 @@ export const ShipExitInteraction = () => {
             radius={2}
             onInteract={handleExitShip}
             interactionText="Sortir du vaisseau (X)"
-            interactionKey="x"
+            interactionKey="k"
             showText={true}
         >
             {/* Indicateur de sortie */}
-            <group position={[0, -1, 0]}>
-                <Box args={[0.5, 0.1, 0.5]}>
+            <group position={[0, 0, 0]}>
+                <Box args={[0.1, 0.1, 0.1]}>
                     <meshBasicMaterial color="red" />
                 </Box>
             </group>

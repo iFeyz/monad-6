@@ -282,19 +282,19 @@ export default function RocketThrust() {
         // Géométrie du cylindre tronqué
         "Geometry": folder({
             baseRadius: {
-                value: 1.2,
+                value: 0.1,
                 min: 0.1,
                 max: 10,
                 step: 0.1
             },
             topRadius: {
-                value: 0.4,
+                value: 0.8,
                 min: 0.1,
                 max: 5,
                 step: 0.1
             },
             cylinderHeight: {
-                value: 3.3,
+                value: 1.3,
                 min: 0.1,
                 max: 100,
                 step: 0.1,
@@ -306,13 +306,13 @@ export default function RocketThrust() {
                 }
             },
             radialSegments: {
-                value: 66,
+                value: 92,
                 min: 8,
                 max: 128,
                 step: 1
             },
             heightSegments: {
-                value: 11,
+                value: 14,
                 min: 1,
                 max: 100,
                 step: 1
@@ -321,7 +321,7 @@ export default function RocketThrust() {
         // Effet de dissolution
         "Dissolve Effect": folder({
             dissolve_start: {
-                value: 0.13,
+                value: 0.26,
                 min: 0.0,
                 max: 1.0,
                 step: 0.001,
@@ -382,7 +382,7 @@ export default function RocketThrust() {
                 }
             },
             noise_scale: {
-                value: 3.2,
+                value: 2.3,
                 min: 0.1,
                 max: 20.0,
                 step: 0.1,
@@ -409,7 +409,7 @@ export default function RocketThrust() {
                 }
             },
             fresnel_factor: {
-                value: 1.0,
+                value: 4.5,
                 min: 0.1,
                 max: 10.0,
                 step: 0.1,
@@ -427,7 +427,7 @@ export default function RocketThrust() {
                 }
             },
             fresnel_power: {
-                value: 1.0,
+                value: 0.1,
                 min: 0.1,
                 max: 10.0,
                 step: 0.1,
@@ -436,7 +436,7 @@ export default function RocketThrust() {
                 }
             },
             fresnel_bias: {
-                value: 0.3,
+                value: 0.38,
                 min: 0.0,
                 max: 1.0,
                 step: 0.01,
@@ -450,14 +450,14 @@ export default function RocketThrust() {
     // Keyboard event handlers
     useEffect(() => {
         const handleKeyDown = (event) => {
-            if (event.key.toLowerCase() === 'z' && !isZPressed) {
+            if (event.key.toLowerCase() === 'w' && !isZPressed) {
                 setIsZPressed(true)
                 pressStartTimeRef.current = performance.now()
             }
         }
 
         const handleKeyUp = (event) => {
-            if (event.key.toLowerCase() === 'z') {
+            if (event.key.toLowerCase() === 'w') {
                 setIsZPressed(false)
                 // Reset to base values
                 setDynamicNoiseSpeed(baseNoiseSpeedRef.current)
@@ -494,8 +494,8 @@ export default function RocketThrust() {
             const newCylinderHeight = baseCylinderHeightRef.current * heightMultiplier
             
             // Stricter caps for maximum values
-            const maxNoiseSpeed = Math.min(baseNoiseSpeedRef.current * 3, 15.0) // Max 3x base value or absolute max 15.0
-            const maxCylinderHeight = Math.min(baseCylinderHeightRef.current * 2.5, 20.0) // Max 2.5x base value or absolute max 20.0
+            const maxNoiseSpeed = Math.min(baseNoiseSpeedRef.current * 10, 15.0) // Max 3x base value or absolute max 15.0
+            const maxCylinderHeight = Math.min(baseCylinderHeightRef.current * 1.2, 20.0) // Max 2.5x base value or absolute max 20.0
             
             setDynamicNoiseSpeed(Math.min(newNoiseSpeed, maxNoiseSpeed))
             setDynamicCylinderHeight(Math.min(newCylinderHeight, maxCylinderHeight))
@@ -516,7 +516,7 @@ export default function RocketThrust() {
 
     return (
         <group>
-            <primitive object={scene} scale={[0.08, 0.1, 0.1]} rotation={[0, Math.PI / 2, 0]} />
+            <primitive object={scene.clone()} scale={[0.08, 0.1, 0.1]} rotation={[0, Math.PI / 2, 0]} />
             {targetNode && createPortal(
                 <mesh ref={meshRef} scale={[3, 30, 3]} position={[0, -24.5, -30]} rotation={[Math.PI / 2, 0, 0]}>
                     <cylinderGeometry args={[topRadius, baseRadius, dynamicCylinderHeight, radialSegments, heightSegments, true]} />

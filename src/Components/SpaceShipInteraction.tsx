@@ -55,7 +55,7 @@ export const SpaceshipInteractions = () => {
                         key={`interaction-${ship.id}`}
                         id={`ship-enter-${ship.id}`}
                         type="ship-entrance"
-                        position={ship.position}
+                        position={new Vector3(ship.position.x, ship.position.y , ship.position.z)}
                         radius={6} // Zone d'interaction autour du vaisseau
                         onInteract={handleEnterShip(ship.id)}
                         interactionText={
@@ -76,8 +76,8 @@ export const SpaceshipInteractions = () => {
                     >
                         {/* Indicateur visuel pour les vaisseaux disponibles */}
                         {isAvailable && (
-                            <group position={[0, 2, 0]}>
-                                <Sphere args={[0.3, 8, 8]}>
+                            <group position={[0, 0, 0]}>
+                                <Sphere args={[0.1, 0.1, 0.1]}>
                                     <meshBasicMaterial color="green" />
                                 </Sphere>
                             </group>
@@ -85,8 +85,8 @@ export const SpaceshipInteractions = () => {
                         
                         {/* Indicateur pour le vaisseau contrôlé par le joueur */}
                         {isControlledByMe && (
-                            <group position={[0, 2, 0]}>
-                                <Sphere args={[0.3, 8, 8]}>
+                            <group position={[0, 0, 0]}>
+                                <Sphere args={[0.1, 0.1, 0.1]}>
                                     <meshBasicMaterial color="blue" />
                                 </Sphere>
                             </group>

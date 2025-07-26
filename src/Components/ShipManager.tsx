@@ -25,15 +25,17 @@ export default function ShipManager() {
     
     // Variables pour gérer l'état de sortie
     const isExitingShip = useRef(false);
+    const cameraTransitionTarget = useRef<Vector3 | null>(null);
+    const transitionProgress = useRef(0);
 
-    // CORRECTION COMPLÈTE: Gestion de la touche X avec reset caméra TOTAL
+    // CORRECTION: Gestion de la touche X avec transition fluide
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key.toLowerCase() === 'x' && !isExitingShip.current) {
                 const controlledShip = getControlledShip(currentUserId || '');
                 
                 if (controlledShip && currentUserId) {
-                    console.log(`Sortie du vaisseau ${controlledShip.id} avec reset caméra complet`);
+                    console.log(`Sortie du vaisseau ${controlledShip.id} avec transition fluide`);
                     isExitingShip.current = true;
                     
                     // Position de sortie: Y+3 au-dessus du vaisseau
@@ -43,62 +45,100 @@ export default function ShipManager() {
                         controlledShip.position.z
                     );
                     
-                    // 1. ARRÊTER immédiatement tous les contrôles et caméra du vaisseau
-                    // Désactiver pointer lock si actif
+                    // Position finale de la caméra pour l'orbit camera
+                    const finalCameraPosition = new Vector3(
+                        exitPosition.x,
+                        exitPosition.y + 4,
+                        exitPosition.z - 8
+                    );
+                    
+                    // 1. Désactiver pointer lock si actif
                     if (document.pointerLockElement) {
                         document.exitPointerLock();
                     }
                     
-                    // 2. Reset IMMÉDIAT de la caméra à une position neutre
-                    camera.position.set(
-                        exitPosition.x,
-                        exitPosition.y + 5,
-                        exitPosition.z + 5
-                    );
-                    camera.lookAt(exitPosition);
-                    camera.rotation.set(0, 0, 0); // Reset rotation
-                    camera.updateMatrixWorld(); // Forcer la mise à jour
+                    // 2. Préparer la transition de caméra
+                    cameraTransitionTarget.current = finalCameraPosition;
+                    transitionProgress.current = 0;
                     
-                    // 3. Sortir du vaisseau
+                    // 3. Sortir du vaisseau IMMÉDIATEMENT
                     leaveShip(controlledShip.id);
                     
-                    // 4. Délai court pour éviter les conflits
+                    // 4. Actions immédiates sans délai
+                    updatePosition(exitPosition, 0);
+                    updateSpawned(true);
+                    
+                    // 5. Activer la caméra joueur APRÈS un délai minimal
                     setTimeout(() => {
-                        // 5. Forcer position et rotation à zéro
-                        updatePosition(exitPosition, 0);
-                        
-                        // 6. Marquer comme spawned
-                        updateSpawned(true);
-                        
-                        // 7. Réactiver la caméra joueur
                         setPlayerCamera(currentUserId, true);
-                        
-                        // 8. Spawn avec position fixe
                         spawnPlayer(currentUserId, exitPosition);
                         
-                        // 9. Reset final de la caméra après un délai supplémentaire
+                        // Réinitialiser l'état de sortie après la transition
                         setTimeout(() => {
-                            camera.position.set(
-                                exitPosition.x,
-                                exitPosition.y + 4,
-                                exitPosition.z - 4
-                            );
-                            camera.lookAt(exitPosition);
-                            camera.rotation.set(0, 0, 0);
-                            
                             isExitingShip.current = false;
-                            console.log(`Reset caméra complet terminé`);
-                        }, 300);
+                            cameraTransitionTarget.current = null;
+                            console.log(`Transition de sortie terminée`);
+                        }, 500);
                         
-                        console.log(`Joueur spawné avec caméra reset à:`, exitPosition.toArray());
-                    }, 100);
+                    }, 50); // Délai minimal pour éviter les conflits
                 }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [currentUserId, getControlledShip, leaveShip, updateSpawned, setPlayerCamera, spawnPlayer, updatePosition, camera]);
+    }, [currentUserId, getControlledShip, leaveShip, updateSpawned, setPlayerCamera, spawnPlayer, updatePosition]);
+
+    // Gestion de la transition fluide de caméra
+    useEffect(() => {
+        let animationFrame: number;
+
+        const smoothCameraTransition = () => {
+            if (cameraTransitionTarget.current && transitionProgress.current < 1) {
+                const startPosition = camera.position.clone();
+                const targetPosition = cameraTransitionTarget.current;
+                
+                // Augmenter le progrès de transition
+                transitionProgress.current += 0.02; // Vitesse de transition
+                const progress = Math.min(transitionProgress.current, 1);
+                
+                // Interpolation fluide (ease-out)
+                const easedProgress = 1 - Math.pow(1 - progress, 3);
+                
+                // Appliquer l'interpolation
+                camera.position.lerpVectors(startPosition, targetPosition, easedProgress);
+                
+                // Faire regarder vers la position de sortie
+                const player = getPlayer(currentUserId || '');
+                if (player && player.position) {
+                    const lookTarget = new Vector3(
+                        player.position.x,
+                        player.position.y + 1.5,
+                        player.position.z
+                    );
+                    camera.lookAt(lookTarget);
+                }
+                
+                camera.updateMatrixWorld();
+                
+                // Continuer l'animation si pas terminée
+                if (progress < 1) {
+                    animationFrame = requestAnimationFrame(smoothCameraTransition);
+                }
+            }
+        };
+
+        // Démarrer la transition si nécessaire
+        if (cameraTransitionTarget.current) {
+            smoothCameraTransition();
+        }
+
+        return () => {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+        };
+    }, [camera, currentUserId, getPlayer]);
 
     useEffect(() => {
         const player = getPlayer(currentUserId || '');
@@ -113,8 +153,6 @@ export default function ShipManager() {
         <>
             <SpaceshipSpawner />
             <SpaceshipInteractions />
-            
-          
             
             {ships.map(ship => {
                 if (ship.isControlled === currentUserId) {

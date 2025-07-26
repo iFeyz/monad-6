@@ -47,7 +47,7 @@ export const InteractiveObjects = () => {
             <InteractiveObjectComponent
                 id="coin-spawner"
                 type="spawner"
-                position={new Vector3(0, 1, 0)}
+                position={new Vector3(30, 1, 1)}
                 radius={2}
                 onInteract={handleInteract}
                 interactionText={`Spawner une pièce (${spawnedCoins.length} pièces)`}
