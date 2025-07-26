@@ -19,13 +19,13 @@ export function Player({ position, nickname, rotation, userId, isCurrentUser = f
   const playerRef = useRef<THREE.Group>(null)
   const nameRef = useRef<THREE.Group>(null)
 
-  // Animation de bob pour le joueur
+  // Bobbing animation for the player
   useFrame((state) => {
     if (playerRef.current && !isCurrentUser) {
       playerRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1
     }
     
-    // Le name tag regarde toujours la caméra
+    // Name tag always looks at camera
     if (nameRef.current) {
       nameRef.current.lookAt(state.camera.position)
     }
@@ -40,7 +40,7 @@ export function Player({ position, nickname, rotation, userId, isCurrentUser = f
       <primitive object={scence.clone()} />
    
       
-      {/* Name tag au-dessus du joueur */}
+      {/* Name tag above player */}
       <group position={[0, 2, 0]} ref={nameRef}>
         <Text
           position={[0, 0, 0]}
@@ -51,7 +51,7 @@ export function Player({ position, nickname, rotation, userId, isCurrentUser = f
         >
           {userId}
         </Text>
-        {/* Fond du name tag */}
+        {/* Name tag background */}
         <mesh position={[0, 0, -0.01]}>
           <planeGeometry args={[userId.length * 0.2 + 0.4, 0.6]} />
           <meshBasicMaterial color="black" opacity={0.7} transparent />

@@ -20,15 +20,15 @@ export const ShipExitInteraction = () => {
     const handleExitShip = (interaction: ActiveInteract) => {
         if (!myId || !controlledShip) return
 
-        // Sortir du vaisseau
+        // Exit ship
         leaveShip(controlledShip.id)
-        updateSpawned(true) // Respawn le joueur
+        updateSpawned(true) // Respawn player
         setPlayerCamera(myId, true)
         
-        console.log(`${myId} sort du vaisseau ${controlledShip.id}`)
+        console.log(`${myId} exits ship ${controlledShip.id}`)
     }
 
-    // N'afficher l'interaction que si le joueur contrôle un vaisseau
+    // Only show interaction if player controls a ship
     if (!controlledShip) return null
 
     return (
@@ -38,11 +38,11 @@ export const ShipExitInteraction = () => {
             position={controlledShip.position}
             radius={2}
             onInteract={handleExitShip}
-            interactionText="Sortir du vaisseau (X)"
+            interactionText="Exit ship (X)"
             interactionKey="k"
             showText={true}
         >
-            {/* Indicateur de sortie */}
+            {/* Exit indicator */}
             <group position={[0, 0, 0]}>
                 <Box args={[0.1, 0.1, 0.1]}>
                     <meshBasicMaterial color="red" />

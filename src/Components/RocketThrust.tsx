@@ -121,7 +121,7 @@ const fragmentShader = `
                                       dot(p2,x2), dot(p3,x3) ) );
     }
 
-    // Fonction neon pour intensifier les couleurs de flamme
+    // Neon function to intensify flame colors
     vec3 neon(float value, vec3 color) {
         float ramp = clamp(value, 0.0, 1.0);
         vec3 output_color = vec3(0.0);
@@ -134,12 +134,12 @@ const fragmentShader = `
         return output_color;
     }
 
-    // Fractional Brownian Motion lissé
+    // Smoothed Fractional Brownian Motion
     float fbm(vec3 x) {
         float v = 0.0;
         float a = 0.5;
         vec3 shift = vec3(100.0);
-        // Matrice de rotation pour éviter les artefacts directionnels
+        // Rotation matrix to avoid directional artifacts
         const mat3 rot = mat3(0.00,  0.80,  0.60,
                               -0.80, 0.36, -0.48,
                               -0.60, -0.48, 0.64);
@@ -148,25 +148,25 @@ const fragmentShader = `
             x = rot * x * 2.0 + shift;
             a *= 0.5;
         }
-        return v * 0.5 + 0.5; // Normaliser entre 0 et 1
+        return v * 0.5 + 0.5; // Normalize between 0 and 1
     }
 
-    // Fonction de lissage pour éviter les discontinuités
+    // Smoothing function to avoid discontinuities
     float smoothNoise(vec3 pos) {
         return (fbm(pos) + fbm(pos + vec3(0.1, 0.1, 0.1))) * 0.5;
     }
 
-    // Fresnel amélioré avec bias pour éviter la disparition complète
+    // Improved Fresnel with bias to avoid complete disappearance
     float improvedFresnel(float amount, vec3 normal, vec3 view, float bias) {
         float fresnel = pow(1.0 - clamp(dot(normalize(normal), normalize(view)), 0.0, 1.0), amount);
-        // Ajouter un bias pour s'assurer qu'il y a toujours une visibilité minimale
+        // Add bias to ensure there's always minimal visibility
         return clamp(fresnel + bias, bias, 1.0);
     }
 
     void main() {
         float time = uTime * noise_speed;
         
-        // Coordonnées avec interpolation plus douce
+        // Coordinates with smoother interpolation
         vec2 smoothUV = smoothstep(0.0, 1.0, v_uv);
         vec3 pos = vec3(
             smoothUV.x * noise_scale, 
@@ -174,37 +174,37 @@ const fragmentShader = `
             time * 0.3
         );
         
-        // Bruit multi-échelle lissé
+        // Multi-scale smoothed noise
         float noise1 = smoothNoise(pos) - 0.5;
         float noise2 = smoothNoise(pos * 2.0 + vec3(100.0)) * 0.5 - 0.25;
         float noise3 = smoothNoise(pos * 4.0 + vec3(200.0)) * 0.25 - 0.125;
         
         float noise_value = (noise1 + noise2 + noise3) * noise_strength;
         
-        // Gradient plus doux
+        // Smoother gradient
         float gradient_height = vert_height - dissolve_start;
-        gradient_height *= 1.0 / max(dissolve_length, 0.001); // Éviter division par 0
+        gradient_height *= 1.0 / max(dissolve_length, 0.001); // Avoid division by zero
         gradient_height = clamp(pow(max(gradient_height, 0.0), gradient_bias) + noise_value, 0.0, 1.0);
         
-        // Alpha avec transition plus douce
+        // Alpha with smoother transition
         float alpha = smoothstep(1.0, 0.0, gradient_height);
         
-        // Application de la fonction neon avec la couleur personnalisée
+        // Apply neon function with custom color
         vec3 final_color = neon(pow(alpha, power_factor), flame_color);
         
-        // Rendre les parties très sombres transparentes pour un meilleur rendu
+        // Make very dark parts transparent for better rendering
         float luminance = dot(final_color, vec3(0.299, 0.587, 0.114));
         alpha *= smoothstep(0.0, 0.1, luminance);
 
-        // Calcul du vecteur vue corrigé
+        // Calculate corrected view vector
         vec3 normal = normalize(v_normal);
         vec3 viewDir = normalize(u_cameraPosition - v_worldPosition);
 
-        // Effet fresnel amélioré avec bias
+        // Improved Fresnel effect with bias
         float fresnelEffect = improvedFresnel(fresnel_factor, normal, viewDir, fresnel_bias);
         fresnelEffect = pow(fresnelEffect * fresnel_amplification, fresnel_power);
 
-        // Multiplier l'alpha pour adoucir les bords
+        // Multiply alpha to soften edges
         alpha *= fresnelEffect;
         gl_FragColor = vec4(final_color, alpha);
     }
@@ -225,7 +225,7 @@ export default function RocketThrust() {
     const baseNoiseSpeedRef = useRef(3.1)
     const baseCylinderHeightRef = useRef(3.3)
     
-    // Utiliser des refs pour les uniforms pour éviter les recréations d'objets
+    // Use refs for uniforms to avoid object recreations
     const uniformsRef = useRef({
         model_height: { value: 2 },
         dissolve_start: { value: 0.001 },
@@ -241,7 +241,7 @@ export default function RocketThrust() {
         fresnel_factor: { value: 1.0 },
         fresnel_amplification: { value: 1.0 },
         fresnel_power: { value: 6.0 },
-        fresnel_bias: { value: 0.3 }, // Nouveau paramètre pour éviter la disparition
+        fresnel_bias: { value: 0.3 }, // New parameter to avoid disappearance
         u_cameraPosition: { value: new THREE.Vector3() }
     })
 
@@ -279,7 +279,7 @@ export default function RocketThrust() {
                 ]
             }
         }),
-        // Géométrie du cylindre tronqué
+        // Truncated cylinder geometry
         "Geometry": folder({
             baseRadius: {
                 value: 0.1,
@@ -318,7 +318,7 @@ export default function RocketThrust() {
                 step: 1
             }
         }),
-        // Effet de dissolution
+        // Dissolve effect
         "Dissolve Effect": folder({
             dissolve_start: {
                 value: 0.26,
@@ -348,7 +348,7 @@ export default function RocketThrust() {
                 }
             }
         }),
-        // Bruit et animation
+        // Noise and animation
         "Noise & Animation": folder({
             noise_speed: {
                 value: 3.1,
@@ -391,7 +391,7 @@ export default function RocketThrust() {
                 }
             }
         }),
-        // Effets visuels
+        // Visual effects
         "Visual Effects": folder({
             power_factor: {
                 value: 1.6,
@@ -476,7 +476,7 @@ export default function RocketThrust() {
     }, [isZPressed])
 
     useFrame((state) => {
-        // Mise à jour du temps et de la position de la caméra
+        // Update time and camera position
         uniformsRef.current.uTime.value = state.clock.elapsedTime
         uniformsRef.current.u_cameraPosition.value.copy(state.camera.position)
         

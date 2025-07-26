@@ -7,29 +7,29 @@ const PerformanceStats = () => {
   const { gl } = useThree()
 
   useEffect(() => {
-    // Créer l'instance Stats
+    // Create Stats instance
     const stats = new Stats()
     statsRef.current = stats
     
-    // Configurer le panneau par défaut (0: fps, 1: ms, 2: mb)
-    stats.showPanel(0) // FPS par défaut
+    // Configure default panel (0: fps, 1: ms, 2: mb)
+    stats.showPanel(0) // FPS by default
     
-    // Styliser et positionner
+    // Style and position
     stats.dom.style.position = 'absolute'
     stats.dom.style.top = '0px'
     stats.dom.style.left = '0px'
     stats.dom.style.zIndex = '1000'
     
-    // Ajouter au DOM
+    // Add to DOM
     document.body.appendChild(stats.dom)
     
-    // Ajouter un gestionnaire de clic pour changer de panneau
+    // Add click handler to change panel
     stats.dom.addEventListener('click', () => {
-      stats.showPanel(++stats.dom.panel % stats.dom.children.length)
+      stats.showPanel((stats.dom as any).panel++ % stats.dom.children.length)
     })
 
     return () => {
-      // Nettoyage
+      // Cleanup
       if (stats.dom && stats.dom.parentNode) {
         document.body.removeChild(stats.dom)
       }

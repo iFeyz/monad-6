@@ -6,13 +6,13 @@ import { ShipExitInteraction } from './ShipExitInteraction'
 export const SpaceshipInteractionSystem = () => {
     return (
         <>
-            {/* Spawner de vaisseaux */}
+
             <SpaceshipSpawner />
             
-            {/* Interactions pour entrer dans les vaisseaux */}
+
             <SpaceshipInteractions />
             
-            {/* Interaction pour sortir d'un vaisseau */}
+
             <ShipExitInteraction />
         </>
     )

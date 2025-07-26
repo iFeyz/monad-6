@@ -23,64 +23,64 @@ export default function ShipManager() {
     const playerRef = useRef<any>(null);
     const [_, getKeys] = useKeyboardControls();
     
-    // Variables pour gérer l'état de sortie
+    // Variables to manage exit state
     const isExitingShip = useRef(false);
     const cameraTransitionTarget = useRef<Vector3 | null>(null);
     const transitionProgress = useRef(0);
 
-    // CORRECTION: Gestion de la touche X avec transition fluide
+    // CORRECTION: X key handling with smooth transition
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key.toLowerCase() === 'x' && !isExitingShip.current) {
                 const controlledShip = getControlledShip(currentUserId || '');
                 
                 if (controlledShip && currentUserId) {
-                    console.log(`Sortie du vaisseau ${controlledShip.id} avec transition fluide`);
+                    console.log(`Exiting ship ${controlledShip.id} with smooth transition`);
                     isExitingShip.current = true;
                     
-                    // Position de sortie: Y+3 au-dessus du vaisseau
+                    // Exit position: Y+3 above the ship
                     const exitPosition = new Vector3(
                         controlledShip.position.x,
                         controlledShip.position.y + 3,
                         controlledShip.position.z
                     );
                     
-                    // Position finale de la caméra pour l'orbit camera
+                    // Final camera position for orbit camera
                     const finalCameraPosition = new Vector3(
                         exitPosition.x,
                         exitPosition.y + 4,
                         exitPosition.z - 8
                     );
                     
-                    // 1. Désactiver pointer lock si actif
+                    // 1. Disable pointer lock if active
                     if (document.pointerLockElement) {
                         document.exitPointerLock();
                     }
                     
-                    // 2. Préparer la transition de caméra
+                    // 2. Prepare camera transition
                     cameraTransitionTarget.current = finalCameraPosition;
                     transitionProgress.current = 0;
                     
-                    // 3. Sortir du vaisseau IMMÉDIATEMENT
+                    // 3. Exit ship IMMEDIATELY
                     leaveShip(controlledShip.id);
                     
-                    // 4. Actions immédiates sans délai
+                    // 4. Immediate actions without delay
                     updatePosition(exitPosition, 0);
                     updateSpawned(true);
                     
-                    // 5. Activer la caméra joueur APRÈS un délai minimal
+                    // 5. Activate player camera AFTER minimal delay
                     setTimeout(() => {
                         setPlayerCamera(currentUserId, true);
                         spawnPlayer(currentUserId, exitPosition);
                         
-                        // Réinitialiser l'état de sortie après la transition
+                        // Reset exit state after transition
                         setTimeout(() => {
                             isExitingShip.current = false;
                             cameraTransitionTarget.current = null;
-                            console.log(`Transition de sortie terminée`);
+                            console.log(`Exit transition completed`);
                         }, 500);
                         
-                    }, 50); // Délai minimal pour éviter les conflits
+                    }, 50); // Minimal delay to avoid conflicts
                 }
             }
         };
@@ -89,7 +89,7 @@ export default function ShipManager() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [currentUserId, getControlledShip, leaveShip, updateSpawned, setPlayerCamera, spawnPlayer, updatePosition]);
 
-    // Gestion de la transition fluide de caméra
+    // Smooth camera transition handling
     useEffect(() => {
         let animationFrame: number;
 
@@ -98,17 +98,17 @@ export default function ShipManager() {
                 const startPosition = camera.position.clone();
                 const targetPosition = cameraTransitionTarget.current;
                 
-                // Augmenter le progrès de transition
-                transitionProgress.current += 0.02; // Vitesse de transition
+                // Increase transition progress
+                transitionProgress.current += 0.02; // Transition speed
                 const progress = Math.min(transitionProgress.current, 1);
                 
-                // Interpolation fluide (ease-out)
+                // Smooth interpolation (ease-out)
                 const easedProgress = 1 - Math.pow(1 - progress, 3);
                 
-                // Appliquer l'interpolation
+                // Apply interpolation
                 camera.position.lerpVectors(startPosition, targetPosition, easedProgress);
                 
-                // Faire regarder vers la position de sortie
+                // Look towards exit position
                 const player = getPlayer(currentUserId || '');
                 if (player && player.position) {
                     const lookTarget = new Vector3(
@@ -121,14 +121,14 @@ export default function ShipManager() {
                 
                 camera.updateMatrixWorld();
                 
-                // Continuer l'animation si pas terminée
+                // Continue animation if not finished
                 if (progress < 1) {
                     animationFrame = requestAnimationFrame(smoothCameraTransition);
                 }
             }
         };
 
-        // Démarrer la transition si nécessaire
+        // Start transition if needed
         if (cameraTransitionTarget.current) {
             smoothCameraTransition();
         }

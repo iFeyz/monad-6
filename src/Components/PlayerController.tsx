@@ -355,7 +355,7 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
 
     // === CONDITIONAL RENDERING BASED ON CAMERA STATE ===
     if (isPlayerCamera) {
-        // Orbit camera setup - plus besoin des nodes de caméra fixes
+        // Orbit camera setup - no longer need fixed camera nodes
         return (
             <RigidBody lockRotations ref={rb}>
                 <group ref={container}>

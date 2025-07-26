@@ -184,15 +184,15 @@ export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
         .applyQuaternion(currentRotation.current)
     const cameraTargetPos = shipPosition.clone().add(cameraOffset)
     
-    // Interpolation plus douce pour éviter les saccades
+    // Smoother interpolation to avoid jerks
     camera.position.lerp(cameraTargetPos, 0.1)
     camera.quaternion.slerp(currentRotation.current, 0.1)
     
-    // Force la mise à jour complète de la caméra
+    // Force full camera update
     camera.updateMatrixWorld(true)
     camera.updateProjectionMatrix()
     
-    // Mise à jour manuelle du frustum pour les objets distants
+    // Manual frustum update for distant objects
     const frustum = new THREE.Frustum()
     const cameraMatrix = new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
     frustum.setFromProjectionMatrix(cameraMatrix)

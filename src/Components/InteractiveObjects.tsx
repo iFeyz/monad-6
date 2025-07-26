@@ -6,7 +6,7 @@ import { Box, Cylinder, Sphere } from '@react-three/drei'
 import type { ActiveInteract } from '../Stores/interactStore'
 import { Coin } from './Coin'
 
-// Type pour une pièce spawnée
+// Type for a spawned coin
 type SpawnedCoin = {
     id: string
     position: Vector3
@@ -18,42 +18,42 @@ export const InteractiveObjects = () => {
     const coinRef = useRef<any>(null)
     
     const handleInteract = (interaction: ActiveInteract) => {
-        // Créer une nouvelle pièce à une position aléatoire autour de l'objet
+        // Create a new coin at a random position around the object
         const randomOffset = new Vector3(
-            (Math.random() - 0.5) * 4, // -2 à +2 sur X
-            Math.random() * 2 + 1,    // 1 à 3 sur Y (au-dessus du sol)
-            (Math.random() - 0.5) * 4  // -2 à +2 sur Z
+            (Math.random() - 0.5) * 4, // -2 to +2 on X
+            Math.random() * 2 + 1,    // 1 to 3 on Y (above ground)
+            (Math.random() - 0.5) * 4  // -2 to +2 on Z
         )
         
         const newCoin: SpawnedCoin = {
-            id: `coin-${Date.now()}-${Math.random()}`, // ID unique
-            position: new Vector3(0, 0, 0).add(randomOffset), // Position relative à l'objet spawner
+            id: `coin-${Date.now()}-${Math.random()}`, // Unique ID
+            position: new Vector3(0, 0, 0).add(randomOffset), // Position relative to spawner object
             spawnTime: Date.now()
         }
         
         setSpawnedCoins(prev => [...prev, newCoin])
-        console.log(`Pièce spawnée par ${interaction.playerId}!`, newCoin)
+        console.log(`Coin spawned by ${interaction.playerId}!`, newCoin)
     }
 
-    // Fonction pour collecter une pièce
+    // Function to collect a coin
     const collectCoin = (coinId: string, interaction: ActiveInteract) => {
         setSpawnedCoins(prev => prev.filter(coin => coin.id !== coinId))
-        console.log(`Pièce ${coinId} collectée par ${interaction.playerId}!`)
+        console.log(`Coin ${coinId} collected by ${interaction.playerId}!`)
     }
 
     return (
         <>
-            {/* Objet spawner de pièces */}
+            {/* Coin spawner object */}
             <InteractiveObjectComponent
                 id="coin-spawner"
                 type="spawner"
                 position={new Vector3(30, 1, 1)}
                 radius={2}
                 onInteract={handleInteract}
-                interactionText={`Spawner une pièce (${spawnedCoins.length} pièces)`}
+                interactionText={`Spawn a coin (${spawnedCoins.length} coins)`}
                 interactionKey="f"
                 onEnter={(interaction) => {
-                    console.log(`${interaction.playerId} s'approche du spawner`)
+                    console.log(`${interaction.playerId} approaches the spawner`)
                 }}
                 showDebugRadius={true}
             >
@@ -64,13 +64,13 @@ export const InteractiveObjects = () => {
                         emissiveIntensity={0.2}
                     />
                 </Box>
-                {/* Indicateur visuel du nombre de pièces */}
+                {/* Visual indicator of coin count */}
                 <Box args={[0.2, 0.2, 0.2]} position={[0, 1.2, 0]}>
                     <meshBasicMaterial color="white" />
                 </Box>
             </InteractiveObjectComponent>
 
-            {/* Rendu de toutes les pièces spawnées */}
+            {/* Render all spawned coins */}
             {spawnedCoins.map((spawnedCoin) => (
                 <InteractiveObjectComponent
                     key={spawnedCoin.id}
@@ -79,10 +79,10 @@ export const InteractiveObjects = () => {
                     position={spawnedCoin.position}
                     radius={1}
                     onInteract={(interaction) => collectCoin(spawnedCoin.id, interaction)}
-                    interactionText="Collecter la pièce (E)"
+                    interactionText="Collect coin (E)"
                     interactionKey="e"
                     onEnter={(interaction) => {
-                        console.log(`${interaction.playerId} près d'une pièce`)
+                        console.log(`${interaction.playerId} near a coin`)
                     }}
                 >
                     <Coin position={new Vector3(0, 0, 0)} />

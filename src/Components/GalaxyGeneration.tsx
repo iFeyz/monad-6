@@ -6,7 +6,7 @@ import { RigidBody} from '@react-three/rapier'
 import { useControls, folder } from "leva";
 import { useGLTF } from '@react-three/drei';
 
-// Noise functions shader code (same as original)
+// Noise functions shader code
 const noiseFunctions = `
 const float PI = 3.14159265;
 
@@ -336,7 +336,7 @@ void main() {
 }
 `;
 
-// Shaders pour les cristaux
+// Crystal shaders
 const CrystalVertexShader = `
     uniform float uTime;
     uniform float uScale;
@@ -353,7 +353,7 @@ const CrystalVertexShader = `
         vPosition = position;
         vLocalPosition = position;
         
-        // Légère oscillation pour donner vie aux cristaux
+        // Subtle oscillation to give life to crystals
         vec3 scaledPosition = position * uScale;
         scaledPosition.y += sin(uTime * 2.0 + position.x * 10.0) * 0.02;
         
@@ -384,7 +384,7 @@ const CrystalFragmentShader = `
         vec3 baseColor = uColor;
         vec3 emissiveColor = rim * uRimColor * uBloomIntensity;
         
-        // Ajout d'une variation de couleur basée sur le temps
+        // Add time-based color variation
         vec3 timeColor = mix(uColor, uRimColor, sin(uTime + vLocalPosition.y * 5.0) * 0.5 + 0.5);
         
         vec3 finalColor = mix(baseColor, timeColor, 0.3) + emissiveColor;
@@ -394,9 +394,9 @@ const CrystalFragmentShader = `
     }
 `;
 
-// Fonction utilitaire pour calculer la hauteur du terrain (version JavaScript)
+// Utility function to calculate terrain height (JavaScript version)
 const calculateTerrainHeight = (position: THREE.Vector3, planetParams: any) => {
-  // Simplifié pour les performances - utilise juste du bruit sinusoïdal
+  // Simplified for performance - uses just sinusoidal noise
   const x = position.x;
   const y = position.y;  
   const z = position.z;
@@ -408,7 +408,7 @@ const calculateTerrainHeight = (position: THREE.Vector3, planetParams: any) => {
   return Math.max(0, noise * planetParams.amplitude + planetParams.offset);
 };
 
-// Composant pour un cristal individuel
+// Individual crystal component
 const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha }: {
   position: THREE.Vector3;
   normal: THREE.Vector3;
@@ -422,10 +422,10 @@ const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha
   const meshRef = useRef<THREE.Group>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   
-  // Charger le modèle de cristal
+  // Load crystal model
   const { scene } = useGLTF('/crystal.glb');
   
-  // Créer le matériau shader pour le cristal
+  // Create shader material for crystal
   const crystalMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       vertexShader: CrystalVertexShader,
@@ -446,19 +446,19 @@ const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha
     });
   }, [color, rimColor, alpha]);
 
-  // Calculer la taille relative au rayon de la planète
+  // Calculate size relative to planet radius
   const finalScale = useMemo(() => {
-    const baseScale = planetRadius * 0.001; // Ajusté pour le modèle 3D
+    const baseScale = planetRadius * 0.001; // Adjusted for 3D model
     return baseScale * scale;
   }, [planetRadius, scale]);
 
-  // Cloner et préparer la scène du cristal
+  // Clone and prepare crystal scene
   const crystalScene = useMemo(() => {
     if (!scene) return null;
     
     const clonedScene = scene.clone();
     
-    // Appliquer le matériau à tous les meshes
+    // Apply material to all meshes
     clonedScene.traverse((child) => {
       if (child.isMesh) {
         child.material = crystalMaterial;
@@ -468,12 +468,12 @@ const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha
     return clonedScene;
   }, [scene, crystalMaterial]);
 
-  // Positionner et orienter le cristal
+  // Position and orient crystal
   useEffect(() => {
     if (meshRef.current && crystalScene) {
       meshRef.current.position.copy(position);
       
-      // Orienter selon la normale
+      // Orient according to normal
       const up = new THREE.Vector3(0, 1, 0);
       const quaternion = new THREE.Quaternion();
       quaternion.setFromUnitVectors(up, normal);
@@ -488,7 +488,7 @@ const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha
       if (materialRef.current) {
         materialRef.current.uniforms.uTime.value = Date.now() * 0.001;
       }
-    }, 100); // Mise à jour toutes les 100ms au lieu de chaque frame
+    }, 100); // Update every 100ms instead of every frame
   
     return () => clearInterval(interval);
   }, []); 
@@ -503,15 +503,15 @@ const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha
   );
 };
 
-// Système de génération de cristaux
+// Crystal generation system
 const CrystalSystem = ({ planetParams, crystalParams }: { planetParams: any; crystalParams: any }) => {
   
   const crystalData = useMemo(() => {
     const crystals = [];
-    const numCrystals = Math.min(8, Math.floor(planetParams.params.radius * 0.3)); // Maximum 8 cristaux par planète
+    const numCrystals = Math.min(8, Math.floor(planetParams.params.radius * 0.3)); // Maximum 8 crystals per planet
     
     for (let i = 0; i < numCrystals; i++) {
-      // Générer une position aléatoire sur la sphère unitaire
+      // Generate random position on unit sphere
       const phi = Math.random() * Math.PI * 2;
       const theta = Math.acos(2 * Math.random() - 1);
       
@@ -519,25 +519,25 @@ const CrystalSystem = ({ planetParams, crystalParams }: { planetParams: any; cry
       const y = Math.sin(theta) * Math.sin(phi);
       const z = Math.cos(theta);
       
-      // Position sur la sphère unitaire
+      // Position on unit sphere
       const spherePosition = new THREE.Vector3(x, y, z);
       
-      // Calculer la hauteur du terrain à cette position (même logique que le vertex shader)
+      // Calculate terrain height at this position (same logic as vertex shader)
       const terrainHeight = calculateTerrainHeight(spherePosition, planetParams.params);
       
-      // Rayon final APRÈS transformation du vertex shader : (radius + terrainHeight) * scale
+      // Final radius AFTER vertex shader transformation: (radius + terrainHeight) * scale
       const finalRadius = (planetParams.params.radius + terrainHeight) * planetParams.scale * 0.9;
       
-      // Position finale sur la surface transformée
+      // Final position on transformed surface
       const surfacePosition = spherePosition.clone().multiplyScalar(finalRadius);
       
-      // Ajouter la position de la planète
+      // Add planet position
       surfacePosition.add(planetParams.position);
       
-      // La normale est la direction depuis le centre vers le point de surface
+      // Normal is direction from center to surface point
       const normal = spherePosition.clone().normalize();
       
-      // Taille aléatoire du cristal
+      // Random crystal size
       const scale = crystalParams.minSize + Math.random() * (crystalParams.maxSize - crystalParams.minSize);
       
       crystals.push({
@@ -557,7 +557,7 @@ const CrystalSystem = ({ planetParams, crystalParams }: { planetParams: any; cry
         position={crystal.position}
         normal={crystal.normal}
         scale={crystal.scale}
-        planetRadius={50} // Valeur fixe ou passer en prop
+        planetRadius={50} // Fixed value or pass as prop
         color={crystalParams.color}
         rimColor={crystalParams.rimColor}
         alpha={crystalParams.alpha}
@@ -567,7 +567,7 @@ const CrystalSystem = ({ planetParams, crystalParams }: { planetParams: any; cry
   );
 };
 
-// Add Crystal data interface
+// Crystal data interface
 interface CrystalData {
   id: string;
   chunkKey: string;
@@ -622,7 +622,7 @@ interface ChunkData {
   key: string;
   position: THREE.Vector3;
   planets: PlanetData[];
-  crystals: CrystalData[]; // Add crystals array
+  crystals: CrystalData[];
 }
 
 // Seeded random number generator for consistent generation
@@ -741,7 +741,6 @@ const GalaxyPlanet = ({ planetData, crystalParams }: { planetData: PlanetData, c
   });
 
   return (
-   // <RigidBody type="fixed" colliders="hull">
    <group>
            <RigidBody colliders={false}>
                 <mesh position={[planetData.position.x, planetData.position.y, planetData.position.z]}>
@@ -774,6 +773,7 @@ const GalaxyPlanet = ({ planetData, crystalParams }: { planetData: PlanetData, c
  
   );
 };
+
 // Chunk-based Galaxy System
 export const ProceduralGalaxy = () => {
   const { camera } = useThree();
@@ -788,7 +788,7 @@ export const ProceduralGalaxy = () => {
   const MAX_PLANETS_PER_CHUNK = 3;
   const CRYSTALS_PER_CHUNK = 0;
   const MAX_CRYSTALS_PER_CHUNK = 5; // More crystals than planets for magical feel
-  const UPDATE_FREQUENCY = 120; // Mise à jour 4 fois moins fréquente
+  const UPDATE_FREQUENCY = 120; // Update 4 times less frequently
 
   const crystalParams = useControls('Crystals', {
     enabled: { value: true },

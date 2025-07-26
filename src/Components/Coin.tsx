@@ -12,16 +12,16 @@ export const Coin = forwardRef<THREE.Group, CoinProps>(({ position = [0, 0, 0] }
     const coin = useGLTF("/coin.glb")
     const groupRef = useRef<THREE.Group>(null)
     
-    // Animation de rotation pour la pièce
+    // Rotation animation for the coin
     useFrame((state) => {
         if (groupRef.current) {
             groupRef.current.rotation.y += 0.02
-            // Animation de flottement
+            // Floating animation
             groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.1
         }
     })
     
-    // Utiliser la ref passée ou la ref interne
+    // Use passed ref or internal ref
     const finalRef = ref || groupRef
 
     const positionArray = Array.isArray(position) 

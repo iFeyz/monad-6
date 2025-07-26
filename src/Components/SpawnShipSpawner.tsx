@@ -13,15 +13,15 @@ export const SpaceshipSpawner = () => {
     const { addShip, ships } = useShipSync()
     const myId = useMyId()
 
-    // Spawner principal de vaisseaux
+    // Main ship spawner
     const handleSpawnShip = (interaction: ActiveInteract) => {
         if (!myId) return
 
-        // Position aléatoire autour du spawner
+        // Random position around spawner
         const spawnPosition = new Vector3(
-            Math.random() * 20 - 10,  // -10 à +10
-            2,                        // En hauteur
-            Math.random() * 20 - 10   // -10 à +10
+            Math.random() * 20 - 10,  // -10 to +10
+            2,                        // At height
+            Math.random() * 20 - 10   // -10 to +10
         )
         
         const spawnRotation = new Euler(0, Math.random() * Math.PI * 2, 0)
@@ -30,34 +30,34 @@ export const SpaceshipSpawner = () => {
         addShip(newShipId, spawnPosition, spawnRotation)
         setSpawnedShips(prev => [...prev, newShipId])
         
-        console.log(`Vaisseau ${newShipId} spawné par ${interaction.playerId} à la position:`, spawnPosition)
+        console.log(`Ship ${newShipId} spawned by ${interaction.playerId} at position:`, spawnPosition)
     }
 
     return (
         <>
-            {/* Spawner principal */}
+            {/* Main spawner */}
             <InteractiveObjectComponent
                 id="spaceship-spawner"
                 type="ship-spawner"
                 position={new Vector3(10, 0, 10)}
                 radius={3}
                 onInteract={handleSpawnShip}
-                interactionText={`Spawner un vaisseau (${ships.length} vaisseaux)`}
+                interactionText={`Spawn a ship (${ships.length} ships)`}
                 interactionKey="v"
                 onEnter={(interaction) => {
-                    console.log(`${interaction.playerId} s'approche du spawner de vaisseaux`)
+                    console.log(`${interaction.playerId} approaches the ship spawner`)
                 }}
                 showDebugRadius={true}
             >
                         <RigidBody type="fixed" colliders="trimesh" gravityScale={0} enabledRotations={[true, true, true]} enabledTranslations={[true, true, true]}> 
 
                 <group>
-                    {/* Base du spawner */}
+                    {/* Spawner base */}
                     <Cylinder args={[2, 2, 0.5, 8]}>
                         <meshStandardMaterial color="silver" metalness={0.8} roughness={0.2} />
                     </Cylinder>
                     
-                    {/* Hologramme de vaisseau */}
+                    {/* Ship hologram */}
                     <group position={[0, 2, 0]}>
                         <Box args={[1, 0.3, 2]} rotation={[0, Math.PI / 4, 0]}>
                             <meshStandardMaterial 
@@ -70,7 +70,7 @@ export const SpaceshipSpawner = () => {
                         </Box>
                     </group>
                     
-                    {/* Texte indicatif */}
+                    {/* Indicative text */}
                     <Text
                         position={[0, 3.5, 0]}
                         fontSize={0.4}
@@ -81,7 +81,7 @@ export const SpaceshipSpawner = () => {
                         SPACESHIP SPAWNER
                     </Text>
                     
-                    {/* Particules d'énergie */}
+                    {/* Energy particles */}
                     <Sphere args={[0.1, 8, 8]} position={[1.5, 1, 0]}>
                         <meshBasicMaterial color="yellow" />
                     </Sphere>

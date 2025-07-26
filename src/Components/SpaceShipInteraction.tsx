@@ -14,34 +14,34 @@ export const SpaceshipInteractions = () => {
     const setPlayerCamera = usePlayerStore(state => state.setPlayerCamera)
     const getControlledShip = useShipStore(state => state.getControlledShip)
 
-    // Fonction pour entrer dans un vaisseau
+    // Function to enter a ship
     const handleEnterShip = (shipId: string) => (interaction: ActiveInteract) => {
         if (!myId || interaction.playerId !== myId) return
 
         const controlledShip = getControlledShip(myId)
         
         if (controlledShip) {
-            console.log(`${myId} contrôle déjà le vaisseau ${controlledShip.id}`)
+            console.log(`${myId} already controls ship ${controlledShip.id}`)
             return
         }
 
         const targetShip = ships.find(ship => ship.id === shipId)
         
         if (!targetShip) {
-            console.log(`Vaisseau ${shipId} introuvable`)
+            console.log(`Ship ${shipId} not found`)
             return
         }
 
         if (targetShip.isControlled) {
-            console.log(`Vaisseau ${shipId} déjà contrôlé par ${targetShip.isControlled}`)
+            console.log(`Ship ${shipId} already controlled by ${targetShip.isControlled}`)
             return
         }
 
-        // Prendre le contrôle du vaisseau
+        // Take control of the ship
         controlShip(shipId, myId)
-        updateSpawned(false) // Despawn le joueur
+        updateSpawned(false) // Despawn player
         
-        console.log(`${myId} entre dans le vaisseau ${shipId}`)
+        console.log(`${myId} enters ship ${shipId}`)
     }
 
     return (
@@ -56,25 +56,25 @@ export const SpaceshipInteractions = () => {
                         id={`ship-enter-${ship.id}`}
                         type="ship-entrance"
                         position={new Vector3(ship.position.x, ship.position.y , ship.position.z)}
-                        radius={6} // Zone d'interaction autour du vaisseau
+                        radius={6} // Interaction zone around ship
                         onInteract={handleEnterShip(ship.id)}
                         interactionText={
                             isControlledByMe 
-                                ? "Vous contrôlez ce vaisseau" 
+                                ? "You control this ship" 
                                 : isAvailable 
-                                    ? "Entrer dans le vaisseau (E)"
-                                    : `Contrôlé par ${ship.isControlled}`
+                                    ? "Enter ship (E)"
+                                    : `Controlled by ${ship.isControlled}`
                         }
                         interactionKey="e"
                         enabled={isAvailable && !isControlledByMe}
                         onEnter={(interaction) => {
                             if (isAvailable) {
-                                console.log(`${interaction.playerId} peut entrer dans le vaisseau ${ship.id}`)
+                                console.log(`${interaction.playerId} can enter ship ${ship.id}`)
                             }
                         }}
                         showDebugRadius={isAvailable}
                     >
-                        {/* Indicateur visuel pour les vaisseaux disponibles */}
+                        {/* Visual indicator for available ships */}
                         {isAvailable && (
                             <group position={[0, 0, 0]}>
                                 <Sphere args={[0.1, 0.1, 0.1]}>
@@ -83,7 +83,7 @@ export const SpaceshipInteractions = () => {
                             </group>
                         )}
                         
-                        {/* Indicateur pour le vaisseau contrôlé par le joueur */}
+                        {/* Indicator for ship controlled by player */}
                         {isControlledByMe && (
                             <group position={[0, 0, 0]}>
                                 <Sphere args={[0.1, 0.1, 0.1]}>

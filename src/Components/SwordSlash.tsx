@@ -114,14 +114,14 @@ const fragmentShader = `
     float erosionMask = smoothstep(erosionAmount - 0.1, erosionAmount + 0.1, finalNoise);
     float prefinal = clamp(combinedMask * erosionMask, 0.0, 1.0);
     
-    // Garantir une couleur minimale (jamais complètement noir)
-    vec3 minColor = color * 0.1; // Couleur de base minimale
+    // Ensure minimum color (never completely black)
+    vec3 minColor = color * 0.1; // Minimum base color
     vec3 finalColor = mix(minColor, color * mixStrength, prefinal);
     
     float highlight = clamp(baseNoiseValue.g - lengthMask, 0.0, 1.0);
     vec3 highlightColor = erosionColor * highlight * 0.3;
     
-    // Assurer que la couleur finale n'est jamais noire
+    // Ensure final color is never black
     finalColor = max(finalColor + highlightColor, minColor);
     
     float start = abs(cos(p * PI));
@@ -132,10 +132,10 @@ const fragmentShader = `
       0.0, 1.0
     );
     
-    // Émission avec minimum garanti
+    // Emission with guaranteed minimum
     vec3 emission = finalColor * max(emissionStrength, 0.2);
     
-    // Couleur finale garantie non-noire
+    // Final color guaranteed non-black
     vec3 outputColor = max(finalColor + emission, minColor);
     
     if (alpha < 0.05) discard;
@@ -157,7 +157,7 @@ const fragmentShader = `
     vAlpha = alpha;
     
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * (50.0 / -mvPosition.z); // Réduction de 300 à 50
+    gl_PointSize = size * (50.0 / -mvPosition.z); // Reduced from 300 to 50
     gl_Position = projectionMatrix * mvPosition;
   }
 `
@@ -182,7 +182,7 @@ const particleFragmentShader = `
   }
 `
 
-// Particle system component attaché directement au mesh slash
+// Particle system component attached directly to slash mesh
 const SlashParticles = ({ slashGeometry, animationProgress }) => {
   const particlesRef = useRef()
   const materialRef = useRef()
@@ -407,7 +407,7 @@ const SwordSlash = ({
     })
   }, [slashTextureBlanc, slashTextureRouge, slashTextureJaune, slashTextureParticule])
   
-  // Uniforms pour les différentes couches d'effet - Thème Violet
+  // Uniforms for different effect layers - Purple Theme
   const uniforms_blanc = useMemo(() => ({
     slashTexture: { value: slashTextureBlanc },
     baseNoise: { value: noiseTexture },
@@ -441,7 +441,7 @@ const SwordSlash = ({
     baseNoise: { value: noiseTexture },
     time: { value: 0 },
     erosionAmount: { value: 0.2 },
-    erosionColor: { value: new THREE.Color(1.0, 0.8, 1.0) }, // Violet très clair/blanc-violet
+    erosionColor: { value: new THREE.Color(1.0, 0.8, 1.0) }, // Very light purple/white-purple
     color: { value: new THREE.Color(0.9, 0.7, 1.0) }, // Violet pastel
     textureOffset: { value: new THREE.Vector2(0.2, 0.0) },
     zoom: { value: 0.53 },
