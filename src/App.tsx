@@ -32,11 +32,7 @@ const keyboardMap = [
 ];
 
 export default function App() {
-  useEffect(() => {
-    const handleClick = () => {
-      const canvas = document.querySelector("canvas");
-      if (canvas) canvas.requestPointerLock();
-    };
+
 
 
   useEffect(() => {
@@ -48,6 +44,29 @@ export default function App() {
     window.addEventListener("click", handleClick)
     return () => window.removeEventListener("click", handleClick)
   }, [])
+
+  function Skybox() {
+    const { scene } = useThree();
+    const loader = new CubeTextureLoader();
+    const texture = loader.load([
+  
+      
+    'px.png', 'nx.png',
+    'py.png', 'ny.png',
+    'pz.png', 'nz.png'
+  
+    ])
+  
+
+    
+
+    
+  
+  
+    scene.background = texture;
+    return null;
+  }
+
   
 
   return (
@@ -71,29 +90,4 @@ export default function App() {
       </div>
     </>
   );
-}
-
-function Skybox() {
-  const { scene } = useThree();
-  const loader = new CubeTextureLoader();
-  const texture = loader.load([
-
-    
-  'px.png', 'nx.png',
-  'py.png', 'ny.png',
-  'pz.png', 'nz.png'
-
-  ])
-
-    "px.png",
-    "nx.png",
-    "py.png",
-    "ny.png",
-    "pz.png",
-    "nz.png",
-  ]);
-
-
-  scene.background = texture;
-  return null;
 }
