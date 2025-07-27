@@ -277,9 +277,7 @@ const SessionScreen = () => {
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-12">
-          <div className="w-20 h-20 mx-auto mb-4 border-2 border-purple-500 rounded-xl flex items-center justify-center">
-            <div className="w-10 h-10 bg-purple-500 rounded-lg"></div>
-          </div>
+          <img src="/monad_logo.png" alt="Monad Space" className="w-20 h-20 mx-auto mb-4" />
           <h1 className="text-2xl font-light text-white mb-2">Monad Space</h1>
           <p className="text-gray-400 text-sm">Join the decentralized universe</p>
         </div>
@@ -293,7 +291,7 @@ const SessionScreen = () => {
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            Rejoindre
+            Join
           </button>
           <button
             onClick={() => setSessionMode('create')}
@@ -303,7 +301,7 @@ const SessionScreen = () => {
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            Créer
+            Create
           </button>
         </div>
 
@@ -366,7 +364,7 @@ const SessionScreen = () => {
 
         <div className="text-center mt-12">
           <p className="text-xs text-gray-500">
-            Powered by React Together • Monad Ecosystem
+            Powered by Multisynq • Monad Ecosystem • Made by iFeyz
           </p>
         </div>
       </div>
