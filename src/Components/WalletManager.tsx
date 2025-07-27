@@ -4,7 +4,7 @@ import { Wallet } from "lucide-react";
 
 
 export default function WalletManager() {
-  const { open, close } = useAppKit();
+  const { open } = useAppKit();
   return (
     <>
       <AppKitProvider>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import  { useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useInteractionStore } from '../Stores/interactStore'
 import { useMyId } from 'react-together'

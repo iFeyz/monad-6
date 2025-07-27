@@ -234,7 +234,7 @@ export const usePlayerSync = () => {
         
         if (usersChanged || nicknamesChanged) {
             connectedUsersRef.current = connectedUsers.map(user => user.userId)
-            nicknamesRef.current = nicknames
+            nicknamesRef.current = nicknames as unknown as Record<string, string>
             syncWithConnectedUsers(connectedUsersRef.current, nicknamesRef.current)
         }
     }, [connectedUsers, nicknames, syncWithConnectedUsers])

@@ -1,8 +1,7 @@
-import React, { useRef, useState } from 'react'
+import  {  useState } from 'react'
 import { Vector3 } from 'three'
 import { InteractiveObjectComponent } from './InteractiveObjectComponent'
-import { usePlayerStore } from '../Stores/playersStore'
-import { Box, Cylinder, Sphere } from '@react-three/drei'
+import { Box } from '@react-three/drei'
 import type { ActiveInteract } from '../Stores/interactStore'
 import { Coin } from './Coin'
 
@@ -15,7 +14,6 @@ type SpawnedCoin = {
 
 export const InteractiveObjects = () => {
     const [spawnedCoins, setSpawnedCoins] = useState<SpawnedCoin[]>([])
-    const coinRef = useRef<any>(null)
     
     const handleInteract = (interaction: ActiveInteract) => {
         // Create a new coin at a random position around the object

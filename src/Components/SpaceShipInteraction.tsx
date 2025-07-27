@@ -1,8 +1,7 @@
-import React from 'react'
 import { Vector3 } from 'three'
 import { InteractiveObjectComponent } from './InteractiveObjectComponent'
 import { useShipStore, useShipSync } from '../Stores/shipStore'
-import { usePlayerStore, usePlayerStateSyncManager } from '../Stores/playersStore'
+import {  usePlayerStateSyncManager } from '../Stores/playersStore'
 import { useMyId } from 'react-together'
 import type { ActiveInteract } from '../Stores/interactStore'
 import { Sphere } from '@react-three/drei'
@@ -11,7 +10,6 @@ export const SpaceshipInteractions = () => {
     const { ships, controlShip } = useShipSync()
     const myId = useMyId()
     const { updateSpawned } = usePlayerStateSyncManager(myId || '')
-    const setPlayerCamera = usePlayerStore(state => state.setPlayerCamera)
     const getControlledShip = useShipStore(state => state.getControlledShip)
 
     // Function to enter a ship

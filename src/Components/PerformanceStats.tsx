@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import Stats from 'stats.js'
 
 const PerformanceStats = () => {
   const statsRef = useRef<Stats | null>(null)
-  const { gl } = useThree()
 
   useEffect(() => {
     // Create Stats instance

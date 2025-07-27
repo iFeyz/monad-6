@@ -1,39 +1,21 @@
-import { useLoader } from "@react-three/fiber"
 import { Environment, useGLTF } from "@react-three/drei"
-import manta from "/manta.glb?url"
-import { Group } from "three"
-import * as THREE from "three"
 import CameraSwitcher from "./CameraSwitcher"
 import { PlayersManager } from "./PlayersManager"
 import { Physics, RigidBody } from "@react-three/rapier"
-import { PivotControls } from "@react-three/drei"
-import SpaceShipController from "./SpaceShipController"
 import ShipManager from "./ShipManager"
 import PerformanceStats from "./PerformanceStats"
 import { ProceduralPlanet } from "./ProceduralPlanet"
 import { ProceduralGalaxy } from "./GalaxyGeneration"
 import spaceCraft from "/spaceCraft.glb?url"
 import spaceCraft2 from "/spaceCraft2.glb?url"
-import { useThree } from "@react-three/fiber"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import { useFrame } from "@react-three/fiber"
 import { useRef } from "react"
 import { InteractiveObjects } from "./InteractiveObjects"
-import RocketThrust from "./RocketThrust"
 // NOUVEAUX IMPORTS
 import { InteractionManager } from "./InteractionManager"
-import SwordSlash from "./SwordSlash"
 
 export const Scene = () => {
     const spaceRigibBody = useRef<any>(null)
-    
-    useFrame((state, delta) => {
-        //ROTATION
-      //  if (spaceRigibBody.current) {
-            //const rotationSpeed = 0.01
-            //spaceRigibBody.current.setAngvel({ x: 0, y: rotationSpeed, z: 0 }, true)
-        //}
-    })
+
 
     const space = useGLTF(spaceCraft)
     const space2 = useGLTF(spaceCraft2)
@@ -49,7 +31,7 @@ export const Scene = () => {
                 <Environment preset="night" />
             </>
 
-            <Physics gravity={[0, -10, 0]} debug={true}>
+            <Physics gravity={[0, -10, 0]}>
                 <RigidBody 
                     type="dynamic" 
                     colliders="trimesh" 
@@ -88,9 +70,7 @@ export const Scene = () => {
                 {/* NOUVEAU: Système d'interaction */}
                 <InteractionManager />
                 <InteractiveObjects/>
-                <group position={[10, 1, 1]} rotation={[0, Math.PI/2, 0]}>
-                    <SwordSlash/>
-                </group>
+        
                 <ProceduralPlanet/>
                 <ProceduralGalaxy/>
             </Physics>

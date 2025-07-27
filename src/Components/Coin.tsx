@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef } from 'react'
+import { forwardRef, useRef } from 'react'
 import { useGLTF } from "@react-three/drei"
 import { Vector3 } from "three"
 import { useFrame } from '@react-three/fiber'

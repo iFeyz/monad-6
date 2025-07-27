@@ -9,7 +9,6 @@ export function usePlayer() {
   const [isPlayerController, setIsPlayerController] = useState(false)
 
   const currentUser = connectedUsers.find(user => user.nickname === nickname)
-  const currentUserId = currentUser?.userId || null
 
   const localPlayer = currentUser
     ? {

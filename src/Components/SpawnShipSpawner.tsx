@@ -1,15 +1,14 @@
-import React, { useState } from 'react'
+import  { useState } from 'react'
 import { Vector3, Euler } from 'three'
 import { InteractiveObjectComponent } from './InteractiveObjectComponent'
 import { useShipSync } from '../Stores/shipStore'
 import { useMyId } from 'react-together'
 import { Box, Cylinder, Sphere, Text } from '@react-three/drei'
 import type { ActiveInteract } from '../Stores/interactStore'
-import { useGLTF } from '@react-three/drei'
 import { RigidBody } from '@react-three/rapier'
 
 export const SpaceshipSpawner = () => {
-    const [spawnedShips, setSpawnedShips] = useState<string[]>([])
+    const [, setSpawnedShips] = useState<string[]>([])
     const { addShip, ships } = useShipSync()
     const myId = useMyId()
 

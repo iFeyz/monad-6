@@ -1,7 +1,7 @@
 import { RigidBody } from "@react-three/rapier"
 import { Player } from "./Player"
 import { useRef, useEffect, useCallback, useMemo } from "react"
-import { MathUtils, Vector3, Euler, Spherical } from "three"
+import {  Vector3, Spherical } from "three"
 import { useFrame, useThree } from "@react-three/fiber"
 import { useControls } from "leva"
 import { useKeyboardControls } from "@react-three/drei"
@@ -18,13 +18,7 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
     // === ALL REFS FIRST (MUST BE CALLED UNCONDITIONALLY) ===
     const rb = useRef<any>(null)
     const container = useRef<any>(null)
-    const rotationTarget = useRef(0)
-    const cameraTarget = useRef<any>(null)
-    const cameraPosition = useRef<any>(null)
     const character = useRef<any>(null)
-    const cameraWorldPosition = useRef(new Vector3())
-    const cameraLookAtWorldPosition = useRef(new Vector3())
-    const cameraLookAt = useRef(new Vector3())
     const playerRotationTarget = useRef(0)
     
     // === ORBIT CAMERA REFS ===
@@ -43,7 +37,6 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
     } = usePlayerStateSyncManager(userId)
 
     // Memoized store selectors to prevent re-renders - SIMPLIFIED
-    const spawnPlayer = usePlayerStore(state => state.spawnPlayer)
     const setPlayerController = usePlayerStore(state => state.setPlayerController)
     const getPlayerCamera = usePlayerStore(state => state.getPlayerCamera)
     const setPlayerCamera = usePlayerStore(state => state.setPlayerCamera)

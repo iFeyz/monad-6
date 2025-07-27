@@ -1,9 +1,7 @@
-import { useRef, useEffect } from 'react'
+import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Text, useGLTF } from '@react-three/drei'
-import { Vector3 } from 'three'
 import * as THREE from 'three'
-import { RigidBody } from '@react-three/rapier'
 import playerObject from '/player.glb?url'
 
 interface PlayerProps {
@@ -15,7 +13,7 @@ interface PlayerProps {
   rotation: number
 }
 
-export function Player({ position, nickname, rotation, userId, isCurrentUser = false, color = '#ff6b6b' }: PlayerProps) {
+export function Player({ position, rotation, userId, isCurrentUser = false }: PlayerProps) {
   const playerRef = useRef<THREE.Group>(null)
   const nameRef = useRef<THREE.Group>(null)
 
@@ -31,7 +29,7 @@ export function Player({ position, nickname, rotation, userId, isCurrentUser = f
     }
   })
 
-  const { scene: scence, nodes , materials } = useGLTF(playerObject)
+  const { scene: scence } = useGLTF(playerObject)
 
   return (
     //TODO ADD ROTATION SYNC

@@ -18,7 +18,7 @@ export default function AskingNickname({
 }: {
   changeStep: () => void;
 }) {
-  const [nickname, setNickname, allNicknames] = useNicknames();
+  const [, setNickname] = useNicknames();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

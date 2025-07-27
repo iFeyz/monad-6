@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import  { useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
 import { useInteractionStore, type ActiveInteract } from '../Stores/interactStore'

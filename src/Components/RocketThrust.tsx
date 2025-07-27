@@ -212,11 +212,10 @@ const fragmentShader = `
 
 export default function RocketThrust() {
     const { nodes, scene } = useGLTF('/space.glb')
-    const meshRef = useRef()
-    const shaderMaterialRef = useRef()
+    const meshRef = useRef<THREE.Mesh>(null)
     
     // State for dynamic values controlled by keyboard
-    const [dynamicNoiseSpeed, setDynamicNoiseSpeed] = useState(3.1)
+    const [, setDynamicNoiseSpeed] = useState(3.1)
     const [dynamicCylinderHeight, setDynamicCylinderHeight] = useState(3.3)
     const [isZPressed, setIsZPressed] = useState(false)
     const pressStartTimeRef = useRef(0)
@@ -249,19 +248,9 @@ export default function RocketThrust() {
         targetNodeName,
         baseRadius,
         topRadius,
-        cylinderHeight,
         radialSegments,
         heightSegments,
-        dissolve_start, 
-        dissolve_length, 
-        gradient_bias,
-        noise_speed,
-        noise_strength,
-        stretch_factor,
-        noise_scale,
-        power_factor,
-        flame_color,
-        fresnel_bias
+        
     } = useControls({
         // Target Node Selection
         "Target Node": folder({
@@ -449,14 +438,14 @@ export default function RocketThrust() {
 
     // Keyboard event handlers
     useEffect(() => {
-        const handleKeyDown = (event) => {
+        const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key.toLowerCase() === 'w' && !isZPressed) {
                 setIsZPressed(true)
                 pressStartTimeRef.current = performance.now()
             }
         }
 
-        const handleKeyUp = (event) => {
+        const handleKeyUp = (event: KeyboardEvent) => {
             if (event.key.toLowerCase() === 'w') {
                 setIsZPressed(false)
                 // Reset to base values
@@ -488,7 +477,7 @@ export default function RocketThrust() {
             // Slower increase rates for more controlled effect
             const speedMultiplier = 1 + (pressDuration * 0.1) // Increase speed by 0.8x per second (reduced from 2x)
             const heightMultiplier = 1 + (pressDuration * 0.2) // Increase height by 0.2x per second (reduced from 0.5x)
-            const baseCylinderHeight = 1.5 
+           
             
             const newNoiseSpeed = baseNoiseSpeedRef.current * speedMultiplier
             const newCylinderHeight = baseCylinderHeightRef.current * heightMultiplier

@@ -1,10 +1,7 @@
 import { RigidBody } from "@react-three/rapier";
-import { useGLTF } from "@react-three/drei";
 import { useRef, useEffect } from "react";
 import * as THREE from 'three'; // Import THREE for types
-import manta from "/manta.glb?url"; // Assuming it uses the same model
 import { useShipStore } from "../Stores/shipStore";
-import { group } from "console";
 import { Text } from "@react-three/drei";
 import RocketThrust from "./RocketThrust";
 
@@ -15,7 +12,6 @@ type ShipOtherProps = {
 };
 
 export default function ShipOther({ shipId, position, rotation }: ShipOtherProps) {
-    const { scene: spaceshipScene } = useGLTF(manta);
     const rb = useRef<any>(null); // Ref to the RigidBody
     const ship = useShipStore(state => state.getShip(shipId))
     // This effect runs whenever the 'position' or 'rotation' props change

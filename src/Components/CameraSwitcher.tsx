@@ -1,16 +1,13 @@
 import { useEffect, useRef, useMemo } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useControls } from 'leva'
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { usePlayer } from '../Hooks/usePlayer'
 import { usePlayerStore } from '../Stores/playersStore'
 import * as THREE from 'three'
-import { useMyId } from 'react-together'
 
 export default function CameraSwitcher() {
   const { localPlayer } = usePlayer()
-  const myId = useMyId()
-  const isDespawned = usePlayerStore(state => state.getPlayer(myId || "")?.isDespawned)
   const setIsPlayerController = usePlayerStore(state => state.setPlayerController)
   const setIsPlayerCamera = usePlayerStore(state => state.setPlayerCamera)
   const orbitCameraRef = useRef<THREE.PerspectiveCamera>(null)
@@ -18,7 +15,6 @@ export default function CameraSwitcher() {
 
   const cameraOptions = useMemo(() => ({ orbit: false }), [])
   const { orbit } = useControls('Camera', cameraOptions)
-  const isPlayerCamera = usePlayerStore(state => state.getPlayerCamera(myId || ""))
 
   useFrame(() => {
     if (orbit && orbitCameraRef.current) {

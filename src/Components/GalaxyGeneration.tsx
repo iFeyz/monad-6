@@ -1,9 +1,8 @@
 import * as THREE from 'three';
 import { useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { DirectionalLight } from 'three';
 import { RigidBody} from '@react-three/rapier'
-import { useControls, folder } from "leva";
+import { useControls } from "leva";
 import { useGLTF } from '@react-three/drei';
 
 // Noise functions shader code
@@ -460,8 +459,8 @@ const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha
     
     // Apply material to all meshes
     clonedScene.traverse((child) => {
-      if (child.isMesh) {
-        child.material = crystalMaterial;
+      if (child instanceof THREE.Mesh) {
+        child.material = crystalMaterial as THREE.Material;
       }
     });
     
@@ -639,46 +638,7 @@ class SeededRandom {
   }
 }
 
-// Individual Crystal Component wrapper for galaxy
-const GalaxyCrystal = ({ crystalData }: { crystalData: CrystalData }) => {
-  const groupRef = useRef<THREE.Group>(null);
 
-  useFrame((state) => {
-    if (!groupRef.current) return;
-
-    const group = groupRef.current;
-    const time = state.clock.elapsedTime;
-
-    // Update rotation
-    group.rotation.x += crystalData.rotationSpeed.x;
-    group.rotation.y += crystalData.rotationSpeed.y;
-    group.rotation.z += crystalData.rotationSpeed.z;
-
-    // Subtle floating animation
-    group.position.y = crystalData.position.y + Math.sin(time * 0.5) * 2;
-  });
-
-  return (
-    <RigidBody colliders={false}>
-      <group 
-        ref={groupRef}
-        position={crystalData.position}
-        rotation={crystalData.rotation}
-        scale={crystalData.scale}
-      >
-        <Crystal 
-          position={crystalData.position}
-          normal={crystalData.normal}
-          scale={crystalData.scale}
-          planetRadius={planetParams.radius}
-          color={crystalParams.color}
-          rimColor={crystalParams.rimColor}
-          alpha={crystalParams.alpha}
-        />
-      </group>
-    </RigidBody>
-  );
-};
 
 const GalaxyPlanet = ({ planetData, crystalParams }: { planetData: PlanetData, crystalParams: any }) => {
   const meshRef = useRef<THREE.Mesh>(null);

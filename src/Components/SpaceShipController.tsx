@@ -2,10 +2,9 @@ import { RigidBody } from "@react-three/rapier"
 import { useRef, useEffect, useCallback, useMemo } from "react"
 import { Vector3, Quaternion, Matrix4, Euler } from "three"
 import { useFrame, useThree } from "@react-three/fiber"
-import { useKeyboardControls, useGLTF, PerspectiveCamera } from "@react-three/drei"
+import { useKeyboardControls } from "@react-three/drei"
 import { useControls } from "leva"
 import * as THREE from 'three'
-import manta from "/manta.glb?url"
 import { useShipStore } from '@/Stores/shipStore'
 import { RapierRigidBody } from '@react-three/rapier'
 import React from "react"
@@ -20,9 +19,7 @@ type ShipControlledProps = {
 export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
     // === ALL REFS FIRST (MUST BE CALLED UNCONDITIONALLY) ===
     const rb = useRef<RapierRigidBody>(null)
-    const spaceshipGroup = useRef<any>(null)
     const cameraRig = useRef<any>(null)
-    const mousePosition = useRef({ x: 0, y: 0 })
     const targetDirection = useRef(new Vector3(0, 0, -1))
     const currentRotation = useRef(new Quaternion())
     const thrust = useRef(new Vector3())
@@ -63,7 +60,6 @@ export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
         STRAFE_POWER,
         VERTICAL_POWER,
         LINEAR_DAMPING,
-        ANGULAR_DAMPING,
         BOOST_MULTIPLIER,
         ROTATION_SPEED,
         ROLL_SPEED,
@@ -73,7 +69,6 @@ export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
 
     // === OTHER HOOKS (MUST BE CALLED UNCONDITIONALLY) ===
     const [, get] = useKeyboardControls()
-    const { scene: spaceshipScene } = useGLTF(manta)
     const { size, camera } = useThree()
 
     // === MEMOIZED UTILITY FUNCTIONS ===
@@ -216,104 +211,9 @@ export const ShipController = React.memo(({ shipId }: ShipControlledProps) => {
 
     useFrame(frameCallback)
 
-    // === MEMOIZED SHADER MATERIAL ===
-    const flameShaderMaterial = useMemo(() => ({
-        uniforms: {
-            time: { value: 0 },
-            boxSize: { value: new Vector3(0.2, 0.2, 2.5) }
-        },
-        vertexShader: `
-            varying vec3 vLocalPosition;
-            void main() {
-                vLocalPosition = position;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `,
-        fragmentShader: `
-            uniform float time;
-            uniform vec3 boxSize;
-            varying vec3 vLocalPosition;
 
-            float hash(float n) { return fract(sin(n) * 43758.5453123); }
 
-            float noise(vec3 x) {
-                vec3 p = floor(x);
-                vec3 f = fract(x);
-                f = f * f * (3.0 - 2.0 * f);
-                float n = p.x + p.y * 157.0 + p.z * 113.0;
-                return mix(mix(mix(hash(n + 0.0), hash(n + 1.0), f.x),
-                               mix(hash(n + 157.0), hash(n + 158.0), f.x), f.y),
-                           mix(mix(hash(n + 113.0), hash(n + 114.0), f.x),
-                               mix(hash(n + 270.0), hash(n + 271.0), f.x), f.y), f.z);
-            }
 
-            void main() {
-                vec3 localPos = vLocalPosition;
-                
-                float flameZ = (localPos.z + boxSize.z * 0.5);
-                float normalizedFlameZ = flameZ / boxSize.z;
-                
-                float distFromCenter = length(localPos.xy);
-                float maxRadialDist = max(boxSize.x, boxSize.y) * 0.5;
-                float normalizedRadialDist = distFromCenter / maxRadialDist;
-
-                vec3 color1 = vec3(1.0, 1.0, 0.8);
-                vec3 color2 = vec3(1.0, 0.6, 0.0);
-                vec3 color3 = vec3(0.9, 0.2, 0.0);
-                vec3 color4 = vec3(0.5, 0.05, 0.0);
-
-                vec3 flameColor = mix(color1, color2, normalizedFlameZ * 2.0);
-                flameColor = mix(flameColor, color3, max(0.0, (normalizedFlameZ - 0.3)) * 2.0);
-                flameColor = mix(flameColor, color4, max(0.0, (normalizedFlameZ - 0.7)) * 3.0);
-
-                float intensityZ = pow(1.0 - normalizedFlameZ, 5.0);
-                float intensityRadial = pow(1.0 - normalizedRadialDist, 8.0);
-
-                float baseIntensity = intensityZ * intensityRadial;
-
-                float noiseSpeed = time * 12.0;
-                float noiseScale = 8.0;
-                float noiseVal = noise(vec3(localPos.x * noiseScale, localPos.y * noiseScale, localPos.z * noiseScale + noiseSpeed));
-                
-                float flicker = (noiseVal - 0.5) * 0.6;
-                float distortion = noise(vec3(localPos.x * 10.0, localPos.y * 10.0, localPos.z * 10.0 + time * 5.0)) * 0.3;
-
-                float finalIntensity = baseIntensity + flicker + distortion;
-                finalIntensity = clamp(finalIntensity, 0.0, 1.0);
-
-                finalIntensity = smoothstep(0.4, 1.0, finalIntensity); 
-
-                gl_FragColor = vec4(flameColor * finalIntensity * 3.0, finalIntensity * 2.5);
-            }
-        `,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-    }), [])
-
-    // === MEMOIZED SPACESHIP MODEL ===
-    const SpaceshipModel = useMemo(() => (
-        <group ref={spaceshipGroup}>
-            <group rotation={[0, Math.PI / 2, 0]}>
-                <primitive object={spaceshipScene.clone()} scale={2} />
-            </group>
-        
-        </group>
-    ), [spaceshipScene])
-
-    // === MEMOIZED FLAME EFFECT ===
-    const FlameEffect = useMemo(() => (
-        <group>
-            <mesh position={[0, 0.1, 1.2]} rotation={[-Math.PI, Math.PI, 0]}>
-                <boxGeometry args={[0.2, 0.2, 2.5]} />
-                <shaderMaterial
-                    ref={shaderRef}
-                    attach="material"
-                    args={[flameShaderMaterial]}
-                />
-            </mesh>
-        </group>
-    ), [flameShaderMaterial])
 
     // === RENDER (NO EARLY RETURNS NEEDED) ===
     return (

@@ -1,7 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import  { useRef, useEffect } from 'react';
 import { useShipStore, useShipSync } from '../Stores/shipStore';
 import { usePlayerStore, usePlayerStateSyncManager } from '../Stores/playersStore';
-import { useKeyboardControls } from '@react-three/drei';
 import { Vector3 } from 'three';
 import { useMyId } from 'react-together';
 import { useThree } from '@react-three/fiber';
@@ -21,7 +20,6 @@ export default function ShipManager() {
     const { camera } = useThree();
 
     const playerRef = useRef<any>(null);
-    const [_, getKeys] = useKeyboardControls();
     
     // Variables to manage exit state
     const isExitingShip = useRef(false);
@@ -147,7 +145,7 @@ export default function ShipManager() {
         }
     }, [getPlayer, currentUserId]);
 
-    const controlledShip = getControlledShip(currentUserId || '');
+
 
     return (
         <>

@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import * as THREE from "three"
-import React, { useEffect } from "react"
+import React from "react"
 import { useStateTogether } from "react-together"
 import { usePlayerStore } from "./playersStore"
 

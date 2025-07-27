@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { useControls } from 'leva';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame  } from '@react-three/fiber';
-import { RigidBody } from '@react-three/rapier';
 import { useGLTF } from "@react-three/drei";
 
 // Noise functions shader code
@@ -335,53 +334,8 @@ void main() {
 }
 `;
 
-// Atmosphere vertex shader
-const atmosphereVertexShader = `
-attribute float size;
-varying vec3 fragPosition;
-
-void main() {
-  gl_PointSize = size;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  fragPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-}
-`;
 
 // Atmosphere fragment shader
-const atmosphereFragmentShader = `
-uniform float time;
-uniform float speed;
-uniform float opacity;
-uniform float density;
-uniform float scale;
-uniform vec3 lightDirection;
-uniform vec3 color;
-uniform sampler2D pointTexture;
-
-varying vec3 fragPosition;
-
-${noiseFunctions}
-
-vec2 rotateUV(vec2 uv, float rotation) {
-    float mid = 0.5;
-    return vec2(
-        cos(rotation) * (uv.x - mid) + sin(rotation) * (uv.y - mid) + mid,
-        cos(rotation) * (uv.y - mid) - sin(rotation) * (uv.x - mid) + mid
-    );
-}
-
-void main() {
-  vec3 R = normalize(fragPosition);
-  vec3 L = normalize(lightDirection);
-  float light = max(0.05, dot(R, L));
-
-  float n = simplex3((time * speed) + fragPosition / scale);
-  float alpha = opacity * clamp(n + density, 0.0, 1.0);
-
-  vec2 rotCoords = rotateUV(gl_PointCoord, n);
-  gl_FragColor = vec4(light * color, alpha) * texture2D(pointTexture, gl_PointCoord);
-}
-`;
 
 // Crystal shaders
 const CrystalVertexShader = `
@@ -441,19 +395,7 @@ const CrystalFragmentShader = `
     }
 `;
 
-// Utility function to calculate terrain height (JavaScript version)
-const calculateTerrainHeight = (position: THREE.Vector3, planetParams: any) => {
-  // Simplified for performance - uses just sinusoidal noise
-  const x = position.x;
-  const y = position.y;  
-  const z = position.z;
-  
-  const noise = (Math.sin(x * planetParams.period * 10) + 
-                Math.cos(y * planetParams.period * 10) + 
-                Math.sin(z * planetParams.period * 10)) / 3;
-  
-  return Math.max(0, noise * planetParams.amplitude + planetParams.offset);
-};
+
 
 // Individual crystal component
 const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha }: {
@@ -506,8 +448,8 @@ const Crystal = ({ position, normal, scale, planetRadius, color, rimColor, alpha
     
     // Apply material to all meshes
     clonedScene.traverse((child) => {
-      if (child.isMesh) {
-        child.material = crystalMaterial;
+      if (child instanceof THREE.Mesh) {
+        child.material = crystalMaterial as THREE.Material;
       }
     });
     
@@ -564,7 +506,6 @@ const CrystalSystem = ({ planetParams, crystalParams }: { planetParams: any; cry
       const basePosition = new THREE.Vector3(x, y, z);
       
       // Calculate terrain height at this position
-      const terrainHeight = calculateTerrainHeight(basePosition, planetParams);
       
       // Final position on planet surface
       const surfaceRadius = planetParams.radius - 1;
@@ -605,92 +546,7 @@ const CrystalSystem = ({ planetParams, crystalParams }: { planetParams: any; cry
   );
 };
 
-// Atmosphere component
-const Atmosphere = ({ params, planetRadius }: { params: any, planetRadius: number }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
 
-  // Create cloud texture (you'll need to provide this texture)
-  const cloudTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx?.createRadialGradient(32, 32, 0, 32, 32, 32);
-    gradient?.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    gradient?.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
-    gradient?.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    if (ctx) {
-        ctx.fillStyle = gradient || '';
-        ctx.fillRect(0, 0, 64, 64);
-    }
-    return new THREE.CanvasTexture(canvas);
-  }, []);
-
-  // Generate atmosphere geometry
-  const geometry = useMemo(() => {
-    const geo = new THREE.BufferGeometry();
-    const positions = [];
-    const sizes = [];
-
-    const radius = planetRadius + 1;
-    const thickness = params.thickness;
-    const particles = params.particles;
-
-    for (let i = 0; i < particles; i++) {
-      const r = Math.random() * thickness + radius;
-      const p = new THREE.Vector3(
-        2 * Math.random() - 1,
-        2 * Math.random() - 1,
-        2 * Math.random() - 1
-      );
-      p.normalize().multiplyScalar(r);
-
-      const size = Math.random() * (params.maxParticleSize - params.minParticleSize) + params.minParticleSize;
-      
-      positions.push(p.x, p.y, p.z);
-      sizes.push(size);
-    }
-
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
-    geo.setAttribute('size', new THREE.BufferAttribute(new Float32Array(sizes), 1));
-
-    return geo;
-  }, [planetRadius, params.particles, params.thickness, params.minParticleSize, params.maxParticleSize]);
-
-  // Update time uniform
-  useFrame((state) => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.time.value = state.clock.elapsedTime;
-    }
-    if (meshRef.current) {
-      meshRef.current.rotation.y += 0.0002;
-    }
-  });
-
-  return (
-    <points ref={meshRef} geometry={geometry}>
-      <shaderMaterial
-        ref={materialRef}
-        vertexShader={atmosphereVertexShader}
-        fragmentShader={atmosphereFragmentShader}
-        uniforms={{
-          time: { value: 0 },
-          speed: { value: params.speed },
-          opacity: { value: params.opacity },
-          density: { value: params.density },
-          scale: { value: params.scale },
-          lightDirection: { value: params.lightDirection },
-          color: { value: params.color },
-          pointTexture: { value: cloudTexture }
-        }}
-        transparent
-        blending={THREE.NormalBlending}
-        depthWrite={false}
-      />
-    </points>
-  );
-};
 
 export const ProceduralPlanet = () => {
     const planetMeshRef = useRef<THREE.Mesh>(null);
