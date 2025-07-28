@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Text, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import playerObject from '/player.glb?url'
+import { usePlayer } from '@/Hooks/usePlayer'
 
 interface PlayerProps {
   position: [number, number, number]
@@ -16,6 +17,8 @@ interface PlayerProps {
 export function Player({ position, rotation, userId, isCurrentUser = false }: PlayerProps) {
   const playerRef = useRef<THREE.Group>(null)
   const nameRef = useRef<THREE.Group>(null)
+  const { localPlayer } = usePlayer()
+  const nickname = localPlayer?.nickname || ''
 
   // Bobbing animation for the player
   useFrame((state) => {
@@ -47,11 +50,11 @@ export function Player({ position, rotation, userId, isCurrentUser = false }: Pl
           anchorX="center"
           anchorY="middle"
         >
-          {userId}
+          {nickname}
         </Text>
         {/* Name tag background */}
         <mesh position={[0, 0, -0.01]}>
-          <planeGeometry args={[userId.length * 0.2 + 0.4, 0.6]} />
+          <planeGeometry args={[nickname.length * 0.2 + 0.4, 0.6]} />
           <meshBasicMaterial color="black" opacity={0.7} transparent />
         </mesh>
       </group>

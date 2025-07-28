@@ -11,6 +11,9 @@ import { PlayerConfig } from "./Components/PlayerConfig";
 import ChatManager from "./Components/ChatManager";
 import WalletManager from "./Components/WalletManager";
 import SessionManager from "./Components/SessionManager";
+import { ControlsMenu } from "./Components/ControlsMenu";
+import { PointerLockHandler } from "./Components/PointerLock";
+
 
 // Composant écran de connexion React Together
 const ConnectionScreen = () => {
@@ -68,15 +71,7 @@ const GameApp = ({ onDisconnect, onChangeSession }: { onDisconnect: () => void; 
     { name: "right", keys: ["ArrowRight", "KeyD"] },
   ];
 
-  useEffect(() => {
-    const handleClick = () => {
-      const canvas = document.querySelector('canvas')
-      if (canvas) canvas.requestPointerLock()
-    }
-  
-    window.addEventListener("click", handleClick)
-    return () => window.removeEventListener("click", handleClick)
-  }, [])
+
 
   // Simulation du chargement progressif
   useEffect(() => {
@@ -158,9 +153,11 @@ const GameApp = ({ onDisconnect, onChangeSession }: { onDisconnect: () => void; 
         </Canvas>
       </KeyboardControls>
       
+      <PointerLockHandler />
+
       {/* Player Config as overlay menu */}
       <PlayerConfig onDisconnect={onDisconnect} onChangeSession={onChangeSession} />
-      
+      <ControlsMenu />
       <div className="absolute bottom-5 right-5 px-2 py-1 rounded gap-2 flex text-neutral-50 bg-purple-500">
         <ChatManager />
         <WalletManager />
