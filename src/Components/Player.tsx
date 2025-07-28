@@ -14,7 +14,7 @@ interface PlayerProps {
   rotation: number
 }
 
-export function Player({ position, rotation, userId, isCurrentUser = false }: PlayerProps) {
+export function Player({ position, rotation,  isCurrentUser = false }: PlayerProps) {
   const playerRef = useRef<THREE.Group>(null)
   const nameRef = useRef<THREE.Group>(null)
   const { localPlayer } = usePlayer()
