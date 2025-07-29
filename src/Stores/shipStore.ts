@@ -8,15 +8,14 @@ type SyncShip = {
     id: string;
     position: [number, number, number]; // Serializable format
     rotation: [number, number, number]; // Serializable format (Euler angles)
-    isControlled: string | null; // Correct: ID of controlling user, or null
+    isControlled: string | null; 
 }
 
-// Type for a ship object within the Zustand store (using THREE.Vector3/Euler)
 type LocalShip = {
     id: string;
     position: THREE.Vector3;
     rotation: THREE.Euler;
-    isControlled: string | null; // Correct: ID of controlling user, or null
+    isControlled: string | null; 
 }
 
 type ShipStoreState = {
@@ -31,7 +30,6 @@ type ShipStoreState = {
     setShipControlledBy: (shipId: string, userId: string | null) => void;
     getShip: (id: string) => LocalShip | undefined;
     getControlledShip: (userId: string) => LocalShip | undefined;
-    // Nouvelle méthode pour nettoyer les vaisseaux des joueurs déconnectés
     cleanupDisconnectedPlayerShips: (connectedPlayerIds: string[]) => void;
 }
 
@@ -127,17 +125,13 @@ export const useShipStore = create<ShipStoreState>((set, get) => ({
         }));
     },
 
-    // Nouvelle méthode pour nettoyer les vaisseaux des joueurs déconnectés
     cleanupDisconnectedPlayerShips: (connectedPlayerIds: string[]) => {
         set((state) => {
             const shipsToRemove = state.ships.filter(ship => 
                 ship.isControlled && !connectedPlayerIds.includes(ship.isControlled)
             );
 
-            if (shipsToRemove.length > 0) {
-                console.log(`Removing ${shipsToRemove.length} ships from disconnected players:`, 
-                    shipsToRemove.map(s => ({ id: s.id, controlledBy: s.isControlled })));
-                
+            if (shipsToRemove.length > 0) {                
                 const remainingShips = state.ships.filter(ship => 
                     !ship.isControlled || connectedPlayerIds.includes(ship.isControlled)
                 );
@@ -171,7 +165,6 @@ export const useShipSync = () => {
 
     const isUpdatingFromReactTogetherRef = React.useRef(false);
 
-    // Effet pour nettoyer les vaisseaux quand des joueurs se déconnectent
     React.useEffect(() => {
         const connectedPlayerIds = players.map(player => player.userId);
         cleanupDisconnectedPlayerShips(connectedPlayerIds);
@@ -227,7 +220,6 @@ export const useShipSync = () => {
     const leaveShip = React.useCallback((shipId: string) => {
         setShipControlledBy(shipId, null);
         
-        // Forcer la mise à jour immédiate de react-together
         const updatedShips = localShips.map(ship => 
             ship.id === shipId 
                 ? { ...ship, isControlled: null }
@@ -243,8 +235,6 @@ export const useShipSync = () => {
         
         setReactTogetherShips(serializedShips);
         
-        const ship = getShip(shipId);
-        console.log("leaveShip", ship);
     }, [setShipControlledBy, localShips, setReactTogetherShips, getShip]);
 
 

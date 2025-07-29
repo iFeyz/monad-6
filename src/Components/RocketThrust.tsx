@@ -493,12 +493,7 @@ export default function RocketThrust() {
         }
     })
 
-    // Debug: Log available nodes to help identify the correct node name
-    useEffect(() => {
-        if (nodes) {
-            console.log('Available nodes:', Object.keys(nodes))
-        }
-    }, [nodes])
+
 
     // Check if the target node exists before rendering the portal
     const targetNode = nodes?.[targetNodeName]

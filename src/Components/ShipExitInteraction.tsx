@@ -21,7 +21,6 @@ export const ShipExitInteraction = () => {
         updateSpawned(true) // Respawn player
         setPlayerCamera(myId, true)
         
-        console.log(`${myId} exits ship ${controlledShip.id}`)
     }
 
     // Only show interaction if player controls a ship

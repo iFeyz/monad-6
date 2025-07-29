@@ -3,14 +3,12 @@ import CameraSwitcher from "./CameraSwitcher"
 import { PlayersManager } from "./PlayersManager"
 import { Physics, RigidBody } from "@react-three/rapier"
 import ShipManager from "./ShipManager"
-import PerformanceStats from "./PerformanceStats"
 import { ProceduralPlanet } from "./ProceduralPlanet"
 import { ProceduralGalaxy } from "./GalaxyGeneration"
 import spaceCraft from "/spaceCraft.glb?url"
 import spaceCraft2 from "/spaceCraft2.glb?url"
 import { useRef } from "react"
 import { InteractiveObjects } from "./InteractiveObjects"
-// NOUVEAUX IMPORTS
 import { InteractionManager } from "./InteractionManager"
 
 export const Scene = () => {
@@ -22,7 +20,6 @@ export const Scene = () => {
 
     return (
         <> 
-                    <PerformanceStats />
 
             <>
                 <ambientLight intensity={0.3} />
@@ -61,13 +58,11 @@ export const Scene = () => {
                 </group>
                 </RigidBody>
 
-                {/* SPAWN  PLANE SURFACE */}
            
                 <PlayersManager/>
                 <ShipManager/>
                 <CameraSwitcher/>
                 
-                {/* NOUVEAU: Système d'interaction */}
                 <InteractionManager />
                 <InteractiveObjects/>
         

@@ -4,7 +4,7 @@ import { InteractiveObjectComponent } from './InteractiveObjectComponent'
 import { useShipSync } from '../Stores/shipStore'
 import { useMyId } from 'react-together'
 import { Box, Cylinder, Sphere, Text } from '@react-three/drei'
-import type { ActiveInteract } from '../Stores/interactStore'
+
 import { RigidBody } from '@react-three/rapier'
 
 export const SpaceshipSpawner = () => {
@@ -13,7 +13,7 @@ export const SpaceshipSpawner = () => {
     const myId = useMyId()
 
     // Main ship spawner
-    const handleSpawnShip = (interaction: ActiveInteract) => {
+    const handleSpawnShip = () => {
         if (!myId) return
 
         // Random position around spawner
@@ -29,7 +29,6 @@ export const SpaceshipSpawner = () => {
         addShip(newShipId, spawnPosition, spawnRotation)
         setSpawnedShips(prev => [...prev, newShipId])
         
-        console.log(`Ship ${newShipId} spawned by ${interaction.playerId} at position:`, spawnPosition)
     }
 
     return (
@@ -43,8 +42,7 @@ export const SpaceshipSpawner = () => {
                 onInteract={handleSpawnShip}
                 interactionText={`Spawn a ship (${ships.length} ships)`}
                 interactionKey="v"
-                onEnter={(interaction) => {
-                    console.log(`${interaction.playerId} approaches the ship spawner`)
+                onEnter={() => {
                 }}
                 showDebugRadius={true}
             >

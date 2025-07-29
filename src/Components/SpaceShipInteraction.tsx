@@ -19,19 +19,16 @@ export const SpaceshipInteractions = () => {
         const controlledShip = getControlledShip(myId)
         
         if (controlledShip) {
-            console.log(`${myId} already controls ship ${controlledShip.id}`)
             return
         }
 
         const targetShip = ships.find(ship => ship.id === shipId)
         
         if (!targetShip) {
-            console.log(`Ship ${shipId} not found`)
             return
         }
 
         if (targetShip.isControlled) {
-            console.log(`Ship ${shipId} already controlled by ${targetShip.isControlled}`)
             return
         }
 
@@ -39,7 +36,6 @@ export const SpaceshipInteractions = () => {
         controlShip(shipId, myId)
         updateSpawned(false) // Despawn player
         
-        console.log(`${myId} enters ship ${shipId}`)
     }
 
     return (
@@ -65,9 +61,8 @@ export const SpaceshipInteractions = () => {
                         }
                         interactionKey="e"
                         enabled={isAvailable && !isControlledByMe}
-                        onEnter={(interaction) => {
+                        onEnter={() => {
                             if (isAvailable) {
-                                console.log(`${interaction.playerId} can enter ship ${ship.id}`)
                             }
                         }}
                         showDebugRadius={isAvailable}

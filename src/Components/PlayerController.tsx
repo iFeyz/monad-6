@@ -27,7 +27,6 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
     const orbitTarget = useRef(new Vector3())
     const spherical = useRef(new Spherical())
 
-    // === ALL STORE HOOKS (MUST BE CALLED UNCONDITIONALLY) ===
     const { 
         player, 
         playerPosition, 
@@ -36,17 +35,14 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
         updatePosition,  
     } = usePlayerStateSyncManager(userId)
 
-    // Memoized store selectors to prevent re-renders - SIMPLIFIED
     const setPlayerController = usePlayerStore(state => state.setPlayerController)
     const getPlayerCamera = usePlayerStore(state => state.getPlayerCamera)
     const setPlayerCamera = usePlayerStore(state => state.setPlayerCamera)
     const possibleShipControlled = useShipStore(state => state.getControlledShip(userId))
     const { leaveShip } = useShipSync()
 
-    // === MEMOIZED VALUES ===
     const isPlayerCamera = getPlayerCamera(userId)
 
-    // Stable controls configuration
     const controlsConfig = useMemo(() => ({
         WALK_SPEED: {
             value: 5,
@@ -60,7 +56,6 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
             max: 1,
             step: 0.01,
         },
-        // === ORBIT CAMERA CONTROLS ===
         ORBIT_SENSITIVITY: {
             value: 0.005,
             min: 0.001,
@@ -99,7 +94,6 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
         }
     }), [])
 
-    // === OTHER HOOKS (MUST BE CALLED UNCONDITIONALLY) ===
     const { 
         WALK_SPEED, 
         ROTATION_SPEED,
@@ -113,7 +107,6 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
     const [, get] = useKeyboardControls()
     const { size, camera } = useThree()
 
-    // === MEMOIZED UTILITY FUNCTIONS ===
     const normalizeAngle = useCallback((angle: number) => {
         while (angle > Math.PI) angle -= Math.PI * 2
         while (angle < -Math.PI) angle += Math.PI * 2
@@ -133,22 +126,18 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
         return normalizeAngle(a + (b - a) * t)
     }, [normalizeAngle])
 
-    // === ORBIT CAMERA MOUSE HANDLER ===
     const handleMouseMove = useCallback((event: MouseEvent) => {
         if (!isPlayerCamera || document.pointerLockElement !== document.querySelector('canvas')) return
         
         const deltaX = event.movementX || 0
         const deltaY = event.movementY || 0
         
-        // Update orbit angles
         orbitAngle.current.theta -= deltaX * ORBIT_SENSITIVITY
         orbitAngle.current.phi += deltaY * ORBIT_SENSITIVITY
         
-        // Clamp vertical angle
         orbitAngle.current.phi = Math.max(MIN_POLAR_ANGLE, Math.min(MAX_POLAR_ANGLE, orbitAngle.current.phi))
     }, [isPlayerCamera, ORBIT_SENSITIVITY, MIN_POLAR_ANGLE, MAX_POLAR_ANGLE])
 
-    // === ORBIT CAMERA WHEEL HANDLER ===
     const handleWheel = useCallback((event: WheelEvent) => {
         if (!isPlayerCamera) return
         
@@ -158,15 +147,12 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
         orbitDistance.current = Math.max(MIN_DISTANCE, Math.min(MAX_DISTANCE, orbitDistance.current))
     }, [isPlayerCamera, ZOOM_SPEED, MIN_DISTANCE, MAX_DISTANCE])
 
-    // === EFFECTS (MUST BE CALLED UNCONDITIONALLY) ===
     useEffect(() => {
-        // Leave ship if player is controlling one and gets spawned
         if (possibleShipControlled?.id && player?.isPlayerController && player?.isSpawned) {
             leaveShip(possibleShipControlled.id)
             setPlayerCamera(userId, true)
         }
 
-        // Configure camera perspective
         if (camera instanceof THREE.PerspectiveCamera) {
             camera.fov = 80
             camera.near = 0.1
@@ -175,18 +161,14 @@ export const PlayerController = React.memo(({ userId, nickname }: { userId: stri
             camera.updateProjectionMatrix()
         }
 
-        // Set player as controller for current user
         if (isCurrentUser && player && !player.isPlayerController) {
             setPlayerController(userId, true)
         }
 
-        // CRITICAL: Activate camera when player spawns
         if (isCurrentUser && isSpawned && !isPlayerCamera) {
-            console.log("Activating player camera for spawned player:", userId)
             setPlayerCamera(userId, true)
         }
 
-        // Add orbit camera event listeners
         if (isPlayerCamera) {
             window.addEventListener("mousemove", handleMouseMove)
             window.addEventListener("wheel", handleWheel, { passive: false })

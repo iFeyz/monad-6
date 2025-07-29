@@ -2,7 +2,6 @@ import  {  useState } from 'react'
 import { Vector3 } from 'three'
 import { InteractiveObjectComponent } from './InteractiveObjectComponent'
 import { Box } from '@react-three/drei'
-import type { ActiveInteract } from '../Stores/interactStore'
 import { Coin } from './Coin'
 
 // Type for a spawned coin
@@ -15,7 +14,7 @@ type SpawnedCoin = {
 export const InteractiveObjects = () => {
     const [spawnedCoins, setSpawnedCoins] = useState<SpawnedCoin[]>([])
     
-    const handleInteract = (interaction: ActiveInteract) => {
+    const handleInteract = () => {
         // Create a new coin at a random position around the object
         const randomOffset = new Vector3(
             (Math.random() - 0.5) * 4, // -2 to +2 on X
@@ -30,13 +29,11 @@ export const InteractiveObjects = () => {
         }
         
         setSpawnedCoins(prev => [...prev, newCoin])
-        console.log(`Coin spawned by ${interaction.playerId}!`, newCoin)
     }
 
     // Function to collect a coin
-    const collectCoin = (coinId: string, interaction: ActiveInteract) => {
+    const collectCoin = (coinId: string) => {
         setSpawnedCoins(prev => prev.filter(coin => coin.id !== coinId))
-        console.log(`Coin ${coinId} collected by ${interaction.playerId}!`)
     }
 
     return (
@@ -50,8 +47,7 @@ export const InteractiveObjects = () => {
                 onInteract={handleInteract}
                 interactionText={`Spawn a coin (${spawnedCoins.length} coins)`}
                 interactionKey="f"
-                onEnter={(interaction) => {
-                    console.log(`${interaction.playerId} approaches the spawner`)
+                onEnter={() => {
                 }}
                 showDebugRadius={true}
             >
@@ -76,11 +72,10 @@ export const InteractiveObjects = () => {
                     type="collectible"
                     position={spawnedCoin.position}
                     radius={1}
-                    onInteract={(interaction) => collectCoin(spawnedCoin.id, interaction)}
+                    onInteract={() => collectCoin(spawnedCoin.id)}
                     interactionText="Collect coin (E)"
                     interactionKey="e"
-                    onEnter={(interaction) => {
-                        console.log(`${interaction.playerId} near a coin`)
+                    onEnter={() => {
                     }}
                 >
                     <Coin position={new Vector3(0, 0, 0)} />

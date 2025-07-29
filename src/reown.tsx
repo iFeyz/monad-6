@@ -9,7 +9,7 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 const queryClient = new QueryClient();
 
 // 1. Get projectId from https://dashboard.reown.com
-const projectId = "fbeeb4d1c968f2118f620877423bcab7";
+const projectId = import.meta.env.VITE_REOWN_PROJECT_ID;
 
 // 2. Create a metadata object - optional
 const metadata = {
@@ -19,17 +19,14 @@ const metadata = {
   icons: ["https://avatars.githubusercontent.com/u/179229932"],
 };
 
-// 3. Set the networks
 const networks = [monadTestnet] as [any];
 
-// 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
   networks,
   projectId,
   ssr: true,
 });
 
-// 5. Create modal
 createAppKit({
   adapters: [wagmiAdapter],
   networks,

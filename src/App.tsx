@@ -15,8 +15,9 @@ import { ControlsMenu } from "./Components/ControlsMenu";
 import { PointerLockHandler } from "./Components/PointerLock";
 
 
-// Composant écran de connexion React Together
 const ConnectionScreen = () => {
+
+
   const [dots, setDots] = useState('');
 
   useEffect(() => {
@@ -58,11 +59,11 @@ const ConnectionScreen = () => {
   );
 };
 
-// Composant App/Jeu
 const GameApp = ({ onDisconnect, onChangeSession }: { onDisconnect: () => void; onChangeSession: () => void }) => {
   const [isGameLoaded, setIsGameLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingText, setLoadingText] = useState('Loading');
+  
 
   const keyboardMap = [
     { name: "forward", keys: ["ArrowUp", "KeyZ"] },
@@ -73,7 +74,6 @@ const GameApp = ({ onDisconnect, onChangeSession }: { onDisconnect: () => void; 
 
 
 
-  // Simulation du chargement progressif
   useEffect(() => {
     const loadingSteps = [
       { progress: 20, text: 'Loading resources' },
@@ -111,7 +111,6 @@ const GameApp = ({ onDisconnect, onChangeSession }: { onDisconnect: () => void; 
     return null;
   }
 
-  // Écran de chargement du jeu
   if (!isGameLoaded) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -139,7 +138,6 @@ const GameApp = ({ onDisconnect, onChangeSession }: { onDisconnect: () => void; 
     );
   }
 
-  // Le jeu une fois chargé
   return (
     <>
       <KeyboardControls map={keyboardMap}>
@@ -167,7 +165,6 @@ const GameApp = ({ onDisconnect, onChangeSession }: { onDisconnect: () => void; 
   );
 };
 
-// Composant principal avec écran de session
 const SessionScreen = () => {
   const [sessionMode, setSessionMode] = useState<'join' | 'create'>('create');
   const [sessionData, setSessionData] = useState({
@@ -179,7 +176,9 @@ const SessionScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto-connect when URL contains session parameters
+  const apiKey = import.meta.env.VITE_MULTISYNC_API_KEY;
+
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -188,7 +187,6 @@ const SessionScreen = () => {
     const sessionPassword = hashParams.get('rtPwd');
     
     if (sessionName && sessionPassword) {
-      console.log('🔗 Auto-connecting to session:', { name: sessionName, password: sessionPassword });
       
       setSessionData({
         url: '',
@@ -197,7 +195,6 @@ const SessionScreen = () => {
       });
       setSessionMode('create');
       
-      // Auto-connect after a short delay
       setTimeout(() => {
         setIsLoading(true);
         setTimeout(() => {
@@ -234,7 +231,6 @@ const SessionScreen = () => {
     setIsLoading(false);
     setSessionData({ url: '', name: '', password: '' });
     
-    // Clear URL parameters
     window.history.replaceState({}, document.title, window.location.pathname);
   };
 
@@ -242,7 +238,6 @@ const SessionScreen = () => {
     setIsConnected(false);
     setIsLoading(false);
     
-    // Clear URL parameters
     window.history.replaceState({}, document.title, window.location.pathname);
   };
 
@@ -257,7 +252,7 @@ const SessionScreen = () => {
 
   if (isConnected) {
     const sessionParams = {
-      apiKey: "2UyoWWPeshm6dVAzSbiuCIljeH5hPmi0eu6jVVQakZ",
+      apiKey,
       appId: "com.exampsssqsdsdssle.myapp", 
       name: sessionMode === 'create' ? sessionData.name : "tests-sesdsdsdsdsqdqsqsdsqddssssssionsss",
       password: sessionMode === 'create' ? sessionData.password : "test-padsdqssword"
