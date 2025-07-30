@@ -1,4 +1,4 @@
-import { Environment, useGLTF, Text, Text3D, Center } from "@react-three/drei"
+import { Environment, useGLTF,  Text3D, Center } from "@react-three/drei"
 import CameraSwitcher from "./CameraSwitcher"
 import { PlayersManager } from "./PlayersManager"
 import { Physics, RigidBody } from "@react-three/rapier"
